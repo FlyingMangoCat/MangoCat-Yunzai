@@ -19,13 +19,13 @@
 
 请根据网络情况选择Github安装或Gitee安装
 
-# 使用 Github 
+* 使用 Github 
 ```
 git clone https://github.com/FlyingMangoCat/MangoCat-Yunzai.git
 cd Miao-Yunzai 
 git clone https://github.com/FlyingMangoCat/liulian-plugin.git ./plugins/miao-plugin/
 ```
-# 使用Gitee
+* 使用Gitee
 ```
 git clone https://gitee.com/huifeidemangguomao/MangoCat-Yunzai.git
 cd Miao-Yunzai 
@@ -34,23 +34,23 @@ git clone https://gitee.com/huifeidemangguomao/liulian-plugin.git ./plugins/liul
 
 2.安装[pnpm](https://pnpm.io/zh/installation) ，已安装的可以跳过
 
-# 使用npmjs.org安装
+* 使用npmjs.org安装
 ```
 npm install pnpm -g
 ```
 
-# 指定国内源npmmirror.com安装
+* 指定国内源npmmirror.com安装
 ```
 npm --registry=https://registry.npmmirror.com install pnpm -g
 ```
 
 3.安装依赖
 
-# 直接安装
+* 直接安装
 ```
 pnpm install -P
 ```
-# 如依赖安装缓慢或失败，可尝试更换国内npm源后再执行install命令
+* 如依赖安装缓慢或失败，可尝试更换国内npm源后再执行install命令
 ```
 pnpm config set registry https://registry.npmmirror.com
 pnpm install -P
@@ -93,6 +93,7 @@ linux环境，其他环境请自行探索
 |                           Nickname                            | Contribution      |
 |:-------------------------------------------------------------:|-------------------|
 |      [Yunzai v3.0](https://gitee.com/le-niao/Yunzai-Bot)      | 乐神的Yunzai-Bot V3  |
+|      [Mian-Yunzai v3.0](https://gitee.com/yoimiya-kokomi/Mian-Yunzai-Bot)      | 喵喵的Yunzai-Bot V3  |
 | [GardenHamster](https://github.com/GardenHamster/GenshinPray) | 模拟抽卡背景素材来源        |
 |      [西风驿站](https://bbs.mihoyo.com/ys/collection/839181)      | 角色攻略图来源           |
 |     [米游社友人A](https://bbs.mihoyo.com/ys/collection/428421)     | 角色突破素材图来源         |
