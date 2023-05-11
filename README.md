@@ -1,39 +1,98 @@
-# MangoCat-Yunzai
+# MangoCat-Yunzai v3 [Gitee](https://gitee.com/huifeidemangguomao/MangoCat-Yunzai.git)
 
-#### 介绍
-{**以下是 Gitee 平台说明，您可以替换此简介**
-Gitee 是 OSCHINA 推出的基于 Git 的代码托管平台（同时支持 SVN）。专为开发者提供稳定、高效、安全的云端软件开发协作平台
-无论是个人、团队、或是企业，都能够用 Gitee 实现代码托管、项目管理、协作开发。企业项目请看 [https://gitee.com/enterprises](https://gitee.com/enterprises)}
+基于乐神版[云崽v3.0](https://gitee.com/le-niao/Yunzai-Bot) 改造
 
-#### 软件架构
-软件架构说明
+需要同时安装[liulian-plugin](https://github.com/FlyingMangoCat/liulian-plugin.git)
 
 
-#### 安装教程
+## MamgoCat-Yunzai后续计划
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+先刨坑，但也许会咕咕咕
 
-#### 使用说明
+项目仅供学习交流使用，严禁用于任何商业用途和非法行为
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+## 使用方法
 
-#### 参与贡献
+> 环境准备： Windows or Linux，Node.js（ [版本至少v16以上](http://nodejs.cn/download/) ）， [Redis](https://redis.io/docs/getting-started/installation/ )
 
-1.  Fork 本仓库
-2.  新建 Feat_xxx 分支
-3.  提交代码
-4.  新建 Pull Request
+1.克隆项目并安装liulian-plugin
+
+请根据网络情况选择Github安装或Gitee安装
+
+# 使用 Github 
+```
+git clone https://github.com/FlyingMangoCat/MangoCat-Yunzai.git
+cd Miao-Yunzai 
+git clone https://github.com/FlyingMangoCat/liulian-plugin.git ./plugins/miao-plugin/
+```
+# 使用Gitee
+```
+git clone https://gitee.com/huifeidemangguomao/MangoCat-Yunzai.git
+cd Miao-Yunzai 
+git clone https://gitee.com/huifeidemangguomao/liulian-plugin.git ./plugins/liulian-plugin/
+```
+
+2.安装[pnpm](https://pnpm.io/zh/installation) ，已安装的可以跳过
+
+# 使用npmjs.org安装
+```
+npm install pnpm -g
+```
+
+# 指定国内源npmmirror.com安装
+```
+npm --registry=https://registry.npmmirror.com install pnpm -g
+```
+
+3.安装依赖
+
+# 直接安装
+```
+pnpm install -P
+```
+# 如依赖安装缓慢或失败，可尝试更换国内npm源后再执行install命令
+```
+pnpm config set registry https://registry.npmmirror.com
+pnpm install -P
+```
+
+4.运行（首次运行按提示输入登录）
+
+```
+node app
+```
 
 
-#### 特技
+## 常见问题
 
-1.  使用 Readme\_XXX.md 来支持不同的语言，例如 Readme\_en.md, Readme\_zh.md
-2.  Gitee 官方博客 [blog.gitee.com](https://blog.gitee.com)
-3.  你可以 [https://gitee.com/explore](https://gitee.com/explore) 这个地址来了解 Gitee 上的优秀开源项目
-4.  [GVP](https://gitee.com/gvp) 全称是 Gitee 最有价值开源项目，是综合评定出的优秀开源项目
-5.  Gitee 官方提供的使用手册 [https://gitee.com/help](https://gitee.com/help)
-6.  Gitee 封面人物是一档用来展示 Gitee 会员风采的栏目 [https://gitee.com/gitee-stars/](https://gitee.com/gitee-stars/)
+### puppeteer 相关问题
+
+linux环境，其他环境请自行探索
+
+```sh
+    puppeteer Chromium 启动中...
+    Error: Failed to launch the browser process!
+```
+1. 先检查node版本是否大于14 (不大于14请去升级版本)
+```sh
+    node -v
+```
+2. 如果大于14 则可能是缺失一些库 请安装这些 (点击代码块右上角直接复制,如果报错可以尝试 sudo)
+
+### 依赖库
+```sh
+    yum install pango.x86_64 libXcomposite.x86_64 libXcursor.x86_64 libXdamage.x86_64 libXext.x86_64 libXi.x86_64 libXtst.x86_64 cups-libs.x86_64 libXScrnSaver.x86_64 libXrandr.x86_64 GConf2.x86_64 alsa-lib.x86_64 atk.x86_64 gtk3.x86_64 -y
+```
+### 字体(实测下来貌似还不够)
+```sh
+    yum install ipa-gothic-fonts xorg-x11-fonts-100dpi xorg-x11-fonts-75dpi xorg-x11-utils xorg-x11-fonts-cyrillic xorg-x11-fonts-Type1 xorg-x11-fonts-misc -y
+```
+
+## 致谢
+
+|                           Nickname                            | Contribution      |
+|:-------------------------------------------------------------:|-------------------|
+|      [Yunzai v3.0](https://gitee.com/le-niao/Yunzai-Bot)      | 乐神的Yunzai-Bot V3  |
+| [GardenHamster](https://github.com/GardenHamster/GenshinPray) | 模拟抽卡背景素材来源        |
+|      [西风驿站](https://bbs.mihoyo.com/ys/collection/839181)      | 角色攻略图来源           |
+|     [米游社友人A](https://bbs.mihoyo.com/ys/collection/428421)     | 角色突破素材图来源         |
