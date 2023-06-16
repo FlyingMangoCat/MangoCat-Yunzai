@@ -1,6 +1,6 @@
 # MangoCat-Yunzai v3 [Gitee](https://gitee.com/huifeidemangguomao/MangoCat-Yunzai.git)
 
-基于乐神版[云崽v3.0](https://gitee.com/le-niao/Yunzai-Bot) 改造
+基于喵佬[喵崽](https://gitee.com/yoimiya-kokomi/Miao-Yunzai) 改造
 
 需要同时安装[liulian-plugin](https://github.com/FlyingMangoCat/liulian-plugin.git)
 
@@ -89,7 +89,7 @@ linux环境，其他环境请自行探索
 |                           Nickname                            | Contribution      |
 |:-------------------------------------------------------------:|-------------------|
 |      [Yunzai v3.0](https://gitee.com/le-niao/Yunzai-Bot)      | 乐神的Yunzai-Bot V3  |
-|      [Mian-Yunzai v3.0](https://gitee.com/yoimiya-kokomi/Miao-Yunzai)      | 喵喵的Yunzai-Bot V3  |
+|      [Miao-Yunzai v3.0](https://gitee.com/yoimiya-kokomi/Miao-Yunzai)      | 喵喵的Yunzai-Bot V3  |
 | [GardenHamster](https://github.com/GardenHamster/GenshinPray) | 模拟抽卡背景素材来源        |
 |      [西风驿站](https://bbs.mihoyo.com/ys/collection/839181)      | 角色攻略图来源           |
 |     [米游社友人A](https://bbs.mihoyo.com/ys/collection/428421)     | 角色突破素材图来源         |
