@@ -1,13 +1,9 @@
 # MangoCat-Yunzai v3 [Gitee](https://gitee.com/huifeidemangguomao/MangoCat-Yunzai.git)
 
-基于喵佬[喵崽](https://gitee.com/yoimiya-kokomi/Miao-Yunzai) 改造
+基于[Yunzai-Bot](https://gitee.com/le-niao/Yunzai-Bot) 改造
 
 需要同时安装[liulian-plugin](https://github.com/FlyingMangoCat/liulian-plugin.git)
 
-
-## MamgoCat-Yunzai后续计划
-
-先刨坑，但也许会咕咕咕
 
 项目仅供学习交流使用，严禁用于任何商业用途和非法行为
 
@@ -22,13 +18,13 @@
 * 使用 Github 
 ```
 git clone https://github.com/FlyingMangoCat/MangoCat-Yunzai.git
-cd Miao-Yunzai 
+cd MangoCat-Yunzai
 git clone https://github.com/FlyingMangoCat/liulian-plugin.git ./plugins/miao-plugin/
 ```
 * 使用Gitee
 ```
 git clone https://gitee.com/huifeidemangguomao/MangoCat-Yunzai.git
-cd Miao-Yunzai 
+cd MangoCat-Yunzai
 git clone https://gitee.com/huifeidemangguomao/liulian-plugin.git ./plugins/liulian-plugin/
 ```
 
