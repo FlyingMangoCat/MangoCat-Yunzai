@@ -1,9 +1,11 @@
 # MangoCat-Yunzai v3 [Gitee](https://gitee.com/huifeidemangguomao/MangoCat-Yunzai.git)
 
+### 访问数量：
+[![访问量](https://profile-counter.glitch.me/mango-cat-yunzai/count.svg)](https://gitee.com/huifeidemangguomaocoder/mango-cat-yunzai)
+
 基于[Yunzai-Bot](https://gitee.com/le-niao/Yunzai-Bot) 改造
 
 需要同时安装[liulian-plugin](https://github.com/FlyingMangoCat/liulian-plugin.git)
-
 
 项目仅供学习交流使用，严禁用于任何商业用途和非法行为
 
@@ -19,7 +21,7 @@
 ```
 git clone https://github.com/FlyingMangoCat/MangoCat-Yunzai.git
 cd MangoCat-Yunzai
-git clone https://github.com/FlyingMangoCat/liulian-plugin.git ./plugins/miao-plugin/
+git clone https://github.com/FlyingMangoCat/liulian-plugin.git ./plugins/liulian-plugin/
 ```
 * 使用Gitee
 ```
