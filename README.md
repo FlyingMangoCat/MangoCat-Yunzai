@@ -1,7 +1,7 @@
 # MangoCat-Yunzai v3 [Gitee](https://gitee.com/huifeidemangguomao/MangoCat-Yunzai.git)
 
 ### 访问数量：
-[![访问量](https://profile-counter.glitch.me/mango-cat-yunzai/count.svg)](https://gitee.com/huifeidemangguomaocoder/mango-cat-yunzai)
+[![访问量](https://profile-counter.glitch.me/MangoCat-Yunzai/count.svg)](https://gitee.com/huifeidemangguomaocoder/MangoCat-Yunzai)
 
 基于[Yunzai-Bot](https://gitee.com/le-niao/Yunzai-Bot) 改造
 
