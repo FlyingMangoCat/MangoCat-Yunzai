@@ -124,6 +124,10 @@ dist
 .vscode-test
 .vscode/
 
+# Local documentation and context files
+IFLOW.md
+*.md.backup
+
 # yarn v2
 .yarn/cache
 .yarn/unplugged
