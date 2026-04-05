@@ -1,22 +1,22 @@
-import moment from 'moment'
-import BaseModel from './BaseModel.js'
+import moment from "moment";
+import BaseModel from "./BaseModel.js";
 
-const servs = ['mys', 'hoyolab']
+const servs = ["mys", "hoyolab"];
 // 超时时间不必精确，直接定24小时即可
-const EX = 3600 * 24
-const redisKeyRoot = 'Yz:genshin:mys:'
+const EX = 3600 * 24;
+const redisKeyRoot = "Yz:genshin:mys:";
 
 export default class DailyCache extends BaseModel {
-  constructor (uid) {
-    super()
-    const storeKey = DailyCache.getStoreKey(uid)
+  constructor(uid) {
+    super();
+    const storeKey = DailyCache.getStoreKey(uid);
     // 检查实例缓存
-    let self = this._getThis('store', storeKey)
+    let self = this._getThis("store", storeKey);
     if (self) {
-      return self
+      return self;
     }
-    this.keyPre = `${redisKeyRoot}${storeKey}`
-    return this._cacheThis()
+    this.keyPre = `${redisKeyRoot}${storeKey}`;
+    return this._cacheThis();
   }
 
   /**
@@ -27,35 +27,35 @@ export default class DailyCache extends BaseModel {
    * * 传入servKey (mys/hoyolab)，会返回指定的servCache
    * @returns {DailyCache}
    */
-  static create (uid) {
-    return new DailyCache(uid)
+  static create(uid) {
+    return new DailyCache(uid);
   }
 
   /** ---- 基础方法 ---- **/
   // 内部方法：获取redis表key键值
-  getTableKey (key, sub = '') {
+  getTableKey(key, sub = "") {
     if (sub) {
-      return `${this.keyPre}:${key}-${sub}`
+      return `${this.keyPre}:${key}-${sub}`;
     } else {
-      return `${this.keyPre}:${key}`
+      return `${this.keyPre}:${key}`;
     }
   }
 
   // 内部方法：获取server key
-  static getServKey (uid) {
+  static getServKey(uid) {
     // 不传入uid为默认cache
-    if (!uid || uid === 'cache') {
-      return 'cache'
+    if (!uid || uid === "cache") {
+      return "cache";
     }
     // 传入uid或sever key，判断是mys还是hoyolab
-    return /^[6-9]|^hoyo|^os/i.test(uid) ? servs[1] : servs[0]
+    return /^[6-9]|^hoyo|^os/i.test(uid) ? servs[1] : servs[0];
   }
 
   // 内部方法：获取redis表前缀
-  static getStoreKey (uid) {
-    const serv = DailyCache.getServKey(uid)
-    const date = moment().format('MM-DD')
-    return `${serv}-${date}`
+  static getStoreKey(uid) {
+    const serv = DailyCache.getServKey(uid);
+    const date = moment().format("MM-DD");
+    return `${serv}-${date}`;
   }
 
   /**
@@ -63,11 +63,11 @@ export default class DailyCache extends BaseModel {
    * @param fn
    * @returns {Promise<void>}
    */
-  static async eachCache (fn) {
+  static async eachCache(fn) {
     for (const serv of servs) {
-      let cache = DailyCache.create(serv)
+      let cache = DailyCache.create(serv);
       if (cache) {
-        await fn(cache)
+        await fn(cache);
       }
     }
   }
@@ -75,14 +75,18 @@ export default class DailyCache extends BaseModel {
   /**
    * 删除过期的DailyCache
    */
-  static async clearOutdatedData () {
-    let keys = await redis.keys(`${redisKeyRoot}*`)
-    const date = moment().format('MM-DD')
-    const testReg = new RegExp(`^${redisKeyRoot}(mys|hoyo|hoyolab|cache)-\\d{2}-\\d{2}`)
-    const todayReg = new RegExp(`^${redisKeyRoot}(mys|hoyo|hoyolab|cache)-${date}`)
+  static async clearOutdatedData() {
+    let keys = await redis.keys(`${redisKeyRoot}*`);
+    const date = moment().format("MM-DD");
+    const testReg = new RegExp(
+      `^${redisKeyRoot}(mys|hoyo|hoyolab|cache)-\\d{2}-\\d{2}`,
+    );
+    const todayReg = new RegExp(
+      `^${redisKeyRoot}(mys|hoyo|hoyolab|cache)-${date}`,
+    );
     for (let key of keys) {
       if (testReg.test(key) && !todayReg.test(key)) {
-        await redis.del(key)
+        await redis.del(key);
       }
     }
   }
@@ -93,10 +97,10 @@ export default class DailyCache extends BaseModel {
    * @param hasCount 是否具有count表（KeyList）
    * @returns {Promise<void>}
    */
-  async exTable (table, hasCount = false) {
-    await redis.expire(this.getTableKey(table), EX)
+  async exTable(table, hasCount = false) {
+    await redis.expire(this.getTableKey(table), EX);
     if (hasCount) {
-      await redis.expire(this.getTableKey(table, 'count'), EX)
+      await redis.expire(this.getTableKey(table, "count"), EX);
     }
   }
 
@@ -105,9 +109,9 @@ export default class DailyCache extends BaseModel {
    * @param table
    * @returns {Promise<void>}
    */
-  async empty (table) {
-    await redis.del(this.getTableKey(table))
-    await redis.del(this.getTableKey(table, 'count'))
+  async empty(table) {
+    await redis.del(this.getTableKey(table));
+    await redis.del(this.getTableKey(table, "count"));
   }
 
   /**
@@ -125,9 +129,9 @@ export default class DailyCache extends BaseModel {
    * @param decode 是否对内容进行decode
    * @returns {Promise<any|boolean>}
    */
-  async kGet (table, key, decode = false) {
-    let value = await redis.hGet(this.getTableKey(table), '' + key)
-    return DailyCache.decodeValue(value, decode)
+  async kGet(table, key, decode = false) {
+    let value = await redis.hGet(this.getTableKey(table), "" + key);
+    return DailyCache.decodeValue(value, decode);
   }
 
   /**
@@ -137,10 +141,10 @@ export default class DailyCache extends BaseModel {
    * @param value 数据，若传入对象或数组会自动encode
    * @returns {Promise<void>}
    */
-  async kSet (table, key, value) {
-    value = DailyCache.encodeValue(value)
-    await redis.hSet(this.getTableKey(table), '' + key, value)
-    await this.exTable(this.getTableKey(table))
+  async kSet(table, key, value) {
+    value = DailyCache.encodeValue(value);
+    await redis.hSet(this.getTableKey(table), "" + key, value);
+    await this.exTable(this.getTableKey(table));
   }
 
   /**
@@ -149,8 +153,8 @@ export default class DailyCache extends BaseModel {
    * @param key 数据存储key
    * @returns {Promise<number>}
    */
-  async kDel (table, key) {
-    return await redis.hDel(this.getTableKey(table), '' + key)
+  async kDel(table, key) {
+    return await redis.hDel(this.getTableKey(table), "" + key);
   }
 
   /**
@@ -159,10 +163,10 @@ export default class DailyCache extends BaseModel {
    * @param decode 是否对内容进行decode
    * @returns {Promise<any|boolean>}
    */
-  async get (table, decode = false) {
-    const tableKey = this.getTableKey(table)
-    let value = await redis.get(tableKey)
-    return DailyCache.decodeValue(value, decode)
+  async get(table, decode = false) {
+    const tableKey = this.getTableKey(table);
+    let value = await redis.get(tableKey);
+    return DailyCache.decodeValue(value, decode);
   }
 
   /**
@@ -171,32 +175,32 @@ export default class DailyCache extends BaseModel {
    * @param value 数据，若传入对象或数组会自动encode
    * @returns {Promise<any|boolean>}
    */
-  async set (table, value) {
-    value = DailyCache.encodeValue(value)
-    return await redis.set(this.getTableKey(table), value, { EX })
+  async set(table, value) {
+    value = DailyCache.encodeValue(value);
+    return await redis.set(this.getTableKey(table), value, { EX });
   }
 
   // 内部方法，用于decode value
-  static decodeValue (value, decode = false) {
+  static decodeValue(value, decode = false) {
     if (value && decode) {
       try {
-        return JSON.parse(value)
+        return JSON.parse(value);
       } catch (e) {
-        return false
+        return false;
       }
     }
-    return value
+    return value;
   }
 
   // 内部方法，用于encode value
-  static encodeValue (value) {
-    if (typeof (value) === 'object') {
-      return JSON.stringify(value) || ''
+  static encodeValue(value) {
+    if (typeof value === "object") {
+      return JSON.stringify(value) || "";
     }
-    if (typeof (value) === 'undefined') {
-      return ''
+    if (typeof value === "undefined") {
+      return "";
     }
-    return '' + value
+    return "" + value;
   }
 
   /**
@@ -217,15 +221,15 @@ export default class DailyCache extends BaseModel {
    * @param item 添加的item
    * @returns {Promise<void>}
    */
-  async zAdd (table, key, item) {
-    const tableKey = this.getTableKey(table)
-    await redis.zAdd(tableKey, { score: key, value: item + '' })
+  async zAdd(table, key, item) {
+    const tableKey = this.getTableKey(table);
+    await redis.zAdd(tableKey, { score: key, value: item + "" });
 
     // 同时更新数量，用于数量统计
-    let count = await this.zCount(table, key) || 0
-    const countKey = this.getTableKey(table, 'count')
-    await redis.zAdd(countKey, { score: count, value: key + '' })
-    await this.exTable(this.getTableKey(table), true)
+    let count = (await this.zCount(table, key)) || 0;
+    const countKey = this.getTableKey(table, "count");
+    await redis.zAdd(countKey, { score: count, value: key + "" });
+    await this.exTable(this.getTableKey(table), true);
   }
 
   // 根据key获取list
@@ -235,8 +239,8 @@ export default class DailyCache extends BaseModel {
    * @param key key键值
    * @returns {Promise<Array<ConvertArgumentType<string | Buffer, string>>>}
    */
-  async zList (table, key) {
-    return await redis.zRangeByScore(this.getTableKey(table), key, key)
+  async zList(table, key) {
+    return await redis.zRangeByScore(this.getTableKey(table), key, key);
   }
 
   /**
@@ -245,8 +249,8 @@ export default class DailyCache extends BaseModel {
    * @param item item
    * @returns {Promise<number>}
    */
-  async zKey (table, item) {
-    return await redis.zScore(this.getTableKey(table), item + '')
+  async zKey(table, item) {
+    return await redis.zScore(this.getTableKey(table), item + "");
   }
 
   /**
@@ -255,8 +259,8 @@ export default class DailyCache extends BaseModel {
    * @param key 需要获取长度的key
    * @returns {Promise<number>} 长度值
    */
-  async zCount (table, key) {
-    return await redis.zCount(this.getTableKey(table), key, key)
+  async zCount(table, key) {
+    return await redis.zCount(this.getTableKey(table), key, key);
   }
 
   /**
@@ -265,9 +269,13 @@ export default class DailyCache extends BaseModel {
    * @param table
    * @returns {Promise<string>}
    */
-  async zMinKey (table) {
-    let keys = await redis.zRangeByScore(this.getTableKey(table, 'count'), 0, 60)
-    return keys[0]
+  async zMinKey(table) {
+    let keys = await redis.zRangeByScore(
+      this.getTableKey(table, "count"),
+      0,
+      60,
+    );
+    return keys[0];
   }
 
   /**
@@ -279,13 +287,13 @@ export default class DailyCache extends BaseModel {
    * @param delCount 是否同时删除count记录，删除后不会被zGetDisableKey获取
    * @returns {Promise<void>}
    */
-  async zDisableKey (table, key, delCount = false) {
+  async zDisableKey(table, key, delCount = false) {
     // 将count标记为99次，记录并防止被后续分配
-    const countKey = this.getTableKey(table, 'count')
+    const countKey = this.getTableKey(table, "count");
     if (delCount) {
-      await redis.zRem(countKey, key)
+      await redis.zRem(countKey, key);
     } else {
-      await redis.zAdd(countKey, { score: 99, value: key })
+      await redis.zAdd(countKey, { score: 99, value: key });
     }
   }
 
@@ -294,8 +302,8 @@ export default class DailyCache extends BaseModel {
    * @param table
    * @returns {Promise<Array<ConvertArgumentType<string | Buffer, string>>>}
    */
-  async zGetDisableKey (table) {
-    return await redis.zRangeByScore(this.getTableKey(table, 'count'), 99, 99)
+  async zGetDisableKey(table) {
+    return await redis.zRangeByScore(this.getTableKey(table, "count"), 99, 99);
   }
 
   // 删除某个key
@@ -310,12 +318,12 @@ export default class DailyCache extends BaseModel {
    * @param delCount 是否同时删除count记录，删除后不会被zGetDisableKey获取
    * @returns {Promise<boolean>}
    */
-  async zDel (table, key, delCount = false) {
+  async zDel(table, key, delCount = false) {
     // 删除key对应list所有记录
-    let check = redis.zScore(this.getTableKey(table, 'count'), key)
-    await redis.zRemRangeByScore(this.getTableKey(table), key, key)
-    await this.zDisableKey(table, key, delCount)
-    return !!check
+    let check = redis.zScore(this.getTableKey(table, "count"), key);
+    await redis.zRemRangeByScore(this.getTableKey(table), key, key);
+    await this.zDisableKey(table, key, delCount);
+    return !!check;
   }
 
   /**
@@ -323,8 +331,8 @@ export default class DailyCache extends BaseModel {
    * @param table
    * @returns {Promise<{key:count}>}
    */
-  async zStat (table) {
-    const countKey = this.getTableKey(table, 'count')
-    return await redis.zRangeByScoreWithScores(countKey, 0, 100)
+  async zStat(table) {
+    const countKey = this.getTableKey(table, "count");
+    return await redis.zRangeByScoreWithScores(countKey, 0, 100);
   }
 }
