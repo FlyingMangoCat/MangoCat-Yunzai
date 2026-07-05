@@ -5,6 +5,9 @@
 !genshin/**
 genshin/config/*
 
+!adapter
+!adapter/**
+
 !system
 !system/**
 
