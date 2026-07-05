@@ -4,7 +4,7 @@ import lodash from "lodash"
 import fs from "node:fs"
 import common from "../../../lib/common/common.js"
 import gsCfg from "./gsCfg.js"
-import { Character, Weapon } from "#miao.models"
+import { Character, Weapon } from "#liulian.models"
 
 export default class GachaLog extends base {
   constructor(e) {

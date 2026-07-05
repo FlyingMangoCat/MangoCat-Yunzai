@@ -50,6 +50,7 @@
   },
   "imports": {
     "#yunzai": "./lib/index.js",
-    "#liulian": "./plugins/liulian-plugin/components/index.js"
+    "#liulian": "./plugins/liulian-plugin/components/index.js",
+    "#liulian.models": "./plugins/liulian-plugin/model/liulianModels.js"
   }
 }

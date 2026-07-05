@@ -25,6 +25,8 @@ export default class base {
       tplFile: `./plugins/genshin/resources/html/${this.model}/${this.model}.html`,
       /** 绝对路径 */
       pluResPath: `${this._path}/plugins/genshin/resources/`,
+      /** liulian-plugin 资源路径（统一资源复用） */
+      liulianResPath: `${this._path}/plugins/liulian-plugin/resources/`,
       headStyle: `<style> .head_box { background: url(${this._path}/plugins/genshin/resources/img/namecard/${headImg}.png) #fff; background-position-x: 42px; background-repeat: no-repeat; background-size: auto 101%; }</style>`,
     };
   }

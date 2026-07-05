@@ -4,7 +4,7 @@ import gsCfg from "./gsCfg.js"
 import lodash from "lodash"
 import moment from "moment"
 import fs from "node:fs"
-import { Character } from "#miao.models"
+import { Character } from "#liulian.models"
 
 let dsz = "待实装"
 let imgFile = {}

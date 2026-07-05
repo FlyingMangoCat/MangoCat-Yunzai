@@ -35,7 +35,7 @@
             <div class="bg{{v.rank_type}}"></div>
             <span class="num {{if v.count>=5 && v.rank_type ==5}}life5{{/if}}">{{v.count}}</span>
             {{if v.item_type=='角色'}}
-            <img class="role_img" src="{{pluResPath}}img/role/{{v.name}}.png" onerror="whenError(this,'role')"/>
+            <img class="role_img" src="{{liulianResPath}}genshin/logo/role/{{v.name}}.png" onerror="whenError(this,'role')"/>
             {{/if}} 
             {{if v.item_type=='武器'}}
             <img class="role_img" src="{{pluResPath}}img/weapon/{{v.name}}.png" onerror="whenError(this)"/>

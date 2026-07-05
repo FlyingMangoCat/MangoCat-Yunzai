@@ -42,7 +42,7 @@
             <span class="life life{{val.actived_constellation_num}}"> {{val.actived_constellation_num}}命</span>
             {{/if}}
             <div class="bg{{val.rarity}}"></div>
-            <img class="role_img" src="{{pluResPath}}img/role/{{val.name}}{{val.costumesLogo}}.png" onerror="whenError(this)" />
+            <img class="role_img" src="{{liulianResPath}}genshin/logo/role/{{val.name}}{{val.costumesLogo}}.png" onerror="whenError(this)" />
             <div class="desc">Lv.{{val.level}} 💚{{val.fetter}}</div>
           </div>
           <div class="text_box">
@@ -107,7 +107,7 @@
               {{/if}}
               <img
                 class="role_img bg{{val.rarity}}"
-                src="{{pluResPath}}img/role/{{val.name}}.png"
+                src="{{liulianResPath}}genshin/logo/role/{{val.name}}.png"
                 onerror="whenError(this)"
               />
               <div class="desc">{{val.value}}次</div>
@@ -123,7 +123,7 @@
             <div class="item">
               最多击破：{{abyss.defeat.num}}
               <img
-                src="{{pluResPath}}img/side/{{abyss.defeat.name}}.png"
+                src="{{liulianResPath}}genshin/gacha/character/{{abyss.defeat.name}}.png"
                 class="line-icon two_img"
                 onerror="whenError(this,'side')"
               />
@@ -132,14 +132,14 @@
           <div class="row two">
             <div class="item">
               承受伤害：{{abyss.take_damage.num}}<img
-                src="{{pluResPath}}img/side/{{abyss.take_damage.name}}.png"
+                src="{{liulianResPath}}genshin/gacha/character/{{abyss.take_damage.name}}.png"
                 class="line-icon"
                 onerror="whenError(this,'side')"
               />
             </div>
             <div class="item">
               元素战技：{{abyss.normal_skill.num}}<img
-                src="{{pluResPath}}img/side/{{abyss.normal_skill.name}}.png"
+                src="{{liulianResPath}}genshin/gacha/character/{{abyss.normal_skill.name}}.png"
                 class="line-icon two_img"
                 onerror="whenError(this,'side')"
               />
@@ -148,14 +148,14 @@
           <div class="row">
             <div class="item">
               最强一击：{{abyss.damage.num}}<img
-                src="{{pluResPath}}img/side/{{abyss.damage.name}}.png"
+                src="{{liulianResPath}}genshin/gacha/character/{{abyss.damage.name}}.png"
                 class="line-icon"
                 onerror="whenError(this,'side')"
               />
             </div>
             <div class="item">
               元素爆发：{{abyss.energy_skill.num}}<img
-                src="{{pluResPath}}img/side/{{abyss.energy_skill.name}}.png"
+                src="{{liulianResPath}}genshin/gacha/character/{{abyss.energy_skill.name}}.png"
                 class="line-icon two_img"
                 onerror="whenError(this,'side')"
               />
