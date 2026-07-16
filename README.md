@@ -63,6 +63,14 @@ node app
 
 ## 常见问题
 
+### 从其他版本迁移到 MangoCat-Yunzai
+
+在要迁移的 Yunzai 目录下执行以下命令，会自动切换并保留原有配置：
+
+```bash
+node fmc
+```
+
 ### puppeteer 相关问题
 
 linux环境，其他环境请自行探索
