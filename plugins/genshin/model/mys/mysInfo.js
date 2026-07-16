@@ -517,4 +517,9 @@ export default class MysInfo {
     /** 统计次数设为超限 */
     await this.ckUser.disable(game)
   }
+
+  /** 获取 NoteUser 实例 */
+  static async getNoteUser(e) {
+    return await NoteUser.create(e)
+  }
 }

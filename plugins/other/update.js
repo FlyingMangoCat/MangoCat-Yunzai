@@ -317,10 +317,18 @@ export class update extends plugin {
     }
 
     /** 处理描述 */
-    forwardMsg.data = forwardMsg.data
-      .replace(/\n/g, "")
-      .replace(/<title color="#777777" size="26">(.+?)<\/title>/g, "___")
-      .replace(/___+/, `<title color="#777777" size="26">${title}</title>`);
+    if (typeof forwardMsg.data === "string") {
+      forwardMsg.data = forwardMsg.data
+        .replace(/\n/g, "")
+        .replace(/<title color="#777777" size="26">(.+?)<\/title>/g, "___")
+        .replace(/___+/, `<title color="#777777" size="26">${title}</title>`);
+    } else if (forwardMsg.data && typeof forwardMsg.data === "object") {
+      forwardMsg.data.desc = title;
+      forwardMsg.data.prompt = title;
+      if (forwardMsg.data.meta?.detail?.summary) {
+        forwardMsg.data.meta.detail.summary = title;
+      }
+    }
 
     return forwardMsg;
   }
