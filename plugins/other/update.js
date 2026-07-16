@@ -90,7 +90,7 @@ export class update extends plugin {
 
   async execSync(cmd) {
     return new Promise((resolve, reject) => {
-      exec(cmd, { windowsHide: true }, (error, stdout, stderr) => {
+      exec(cmd, { windowsHide: true, env: { ...process.env, GIT_TERMINAL_PROMPT: "0" } }, (error, stdout, stderr) => {
         resolve({ error, stdout, stderr });
       });
     });
