@@ -23,13 +23,13 @@ export class update extends plugin {
           fnc: "updateLog",
         },
         {
-          reg: "^#(强制)*更新(.*)",
-          fnc: "update",
-        },
-        {
           reg: "^#全部更新$",
           fnc: "updateAll",
           permission: "master",
+        },
+        {
+          reg: "^#(强制)*更新(.*)",
+          fnc: "update",
         },
       ],
     });
