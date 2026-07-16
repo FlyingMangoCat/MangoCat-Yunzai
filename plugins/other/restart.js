@@ -58,29 +58,26 @@ export class Restart extends plugin {
       time: new Date().getTime(),
     });
 
-    let npm = await this.checkPnpm();
-
     try {
       await redis.set(this.key, data, { EX: 120 });
-      let cm = `${npm} start`;
       if (process.argv[1].includes("pm2")) {
-        cm = `${npm} run restart`;
+        let npm = await this.checkPnpm();
+        exec(`${npm} run restart`, { windowsHide: true }, (error, stdout, stderr) => {
+          if (error) {
+            redis.del(this.key);
+            this.e.reply(`操作失败！\n${error.stack}`);
+            logger.error(`重启失败\n${error.stack}`);
+          } else if (stdout) {
+            logger.mark("重启成功，运行已由前台转为后台");
+            logger.mark(`查看日志请用命令：${npm} run log`);
+            logger.mark(`停止后台运行命令：${npm} stop`);
+            process.exit();
+          }
+        });
       } else {
         await this.e.reply("当前为前台运行，重启将转为后台...");
+        Bot.restart()
       }
-
-      exec(cm, { windowsHide: true }, (error, stdout, stderr) => {
-        if (error) {
-          redis.del(this.key);
-          this.e.reply(`操作失败！\n${error.stack}`);
-          logger.error(`重启失败\n${error.stack}`);
-        } else if (stdout) {
-          logger.mark("重启成功，运行已由前台转为后台");
-          logger.mark(`查看日志请用命令：${npm} run log`);
-          logger.mark(`停止后台运行命令：${npm} stop`);
-          process.exit();
-        }
-      });
     } catch (error) {
       redis.del(this.key);
       let e = error.stack ?? error;
