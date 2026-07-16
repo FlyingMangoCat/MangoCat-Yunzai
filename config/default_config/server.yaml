@@ -3,7 +3,7 @@ url: http://localhost:25527
 # 服务器端口
 port: 25527
 # 服务器缺省跳转地址
-redirect: https://git.trss.me/Yunzai
+redirect: https://gitee.com/huifeidemangguomao/MangoCat-Yunzai
 # 服务器鉴权
 auth:
 # Authorization: Bearer <access_token>
