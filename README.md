@@ -65,11 +65,28 @@ node app
 
 ### 从其他版本迁移到 MangoCat-Yunzai
 
-在要迁移的 Yunzai 目录下执行以下命令，会自动切换并保留原有配置：
+`fmc.js` 是迁移脚本，放在**其他 Yunzai 版本（如 Miao-Yunzai、TRSS-Yunzai 等）的根目录**下执行，会自动把该目录切换为 MangoCat-Yunzai。
+
+使用方法：
 
 ```bash
+# 1. 从本仓库复制 fmc.js 到要迁移的 Yunzai 目录下
+cp MangoCat-Yunzai/fmc.js /path/to/other-yunzai/
+
+# 2. 进入该目录执行
+cd /path/to/other-yunzai
 node fmc
 ```
+
+执行流程：
+1. 备份当前配置（`bot.yaml`、`qq.yaml`、`other.yaml`、`server.yaml`）
+2. 添加 FMC 远程仓库并拉取代码
+3. 清理旧文件，切换到 FMC master 分支
+4. 恢复之前备份的配置
+5. 安装依赖
+6. 清理临时备份
+
+迁移完成后配置不变，直接重启 Bot 即可使用。
 
 ### puppeteer 相关问题
 
