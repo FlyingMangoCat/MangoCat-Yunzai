@@ -174,6 +174,11 @@ export default class NoteUser extends BaseModel {
     return "";
   }
 
+  /** 获取指定游戏uid */
+  getUid(game = "gs") {
+    return this.uid
+  }
+
   /**
    * 切换绑定CK生效的UID
    * @param uid 要切换的UID
