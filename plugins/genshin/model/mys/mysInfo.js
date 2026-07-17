@@ -172,7 +172,7 @@ export default class MysInfo {
       return uid
     }
 
-    return selfUser.getUid(e)
+    return selfUser.getUid(game)
   }
 
   /**

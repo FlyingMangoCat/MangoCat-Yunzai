@@ -404,6 +404,11 @@ export default class MysUser extends BaseModel {
     return res;
   }
 
+  /** 获取ck信息（含游戏类型） */
+  getCkInfo(game = "gs") {
+    return { ...this.ckData, game }
+  }
+
   // 获取米游社通行证id
   static async getUserFullInfo(ck, serv = "mys") {
     let url = {
