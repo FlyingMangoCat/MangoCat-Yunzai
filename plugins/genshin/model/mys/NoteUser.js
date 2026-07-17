@@ -179,6 +179,16 @@ export default class NoteUser extends BaseModel {
     return this.uid
   }
 
+  /** 自动注册/绑定uid */
+  async autoRegUid(uid, game = "gs") {
+    return await this.setRegUid(uid, true)
+  }
+
+  /** 获取uid数据 */
+  getUidData(uid, game = "gs") {
+    return this.ckData?.[uid] || null
+  }
+
   /**
    * 切换绑定CK生效的UID
    * @param uid 要切换的UID
