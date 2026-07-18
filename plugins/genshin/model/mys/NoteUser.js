@@ -11,6 +11,7 @@ import MysUser from "./MysUser.js";
 import gsCfg from "../gsCfg.js";
 import { UserDB, UserGameDB } from "../db/index.js";
 import MysUtil from "./MysUtil.js";
+import fs from "node:fs";
 
 export default class NoteUser extends BaseModel {
   constructor(qq, data = null) {
@@ -105,8 +106,9 @@ export default class NoteUser extends BaseModel {
       // 如果数据库中有数据，则初始化MysUser
       if (this.db?.ltuids) {
         await this.initMysUser()
-        this._games = this.db.games || { gs: { uid: "", data: {} }, sr: { uid: "", data: {} }, zzz: { uid: "", data: {} } }
       }
+      // 始终从数据库读取游戏UID数据，不受ltuids影响
+      this._games = this.db?.games || { gs: { uid: "", data: {} }, sr: { uid: "", data: {} }, zzz: { uid: "", data: {} } }
     } catch (e) {
       // 数据库不可用时，静默降级
     }
@@ -189,7 +191,18 @@ export default class NoteUser extends BaseModel {
     if (this.hasCk) {
       return this.mainCk?.uid;
     }
-    return this._regUid || "";
+    // 从Redis获取绑定uid
+    if (this._regUid) return this._regUid;
+    // 兜底：从抽卡记录目录读取uid
+    try {
+      for (const dir of [`./data/gachaJson/${this.qq}`, `./data/srJson/${this.qq}`]) {
+        if (fs.existsSync(dir)) {
+          const uids = fs.readdirSync(dir).filter(f => /^\d{9}$/.test(f))
+          if (uids.length > 0) return uids[0]
+        }
+      }
+    } catch (e) { /* 忽略 */ }
+    return "";
   }
 
   /**
