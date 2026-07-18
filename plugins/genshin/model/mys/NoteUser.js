@@ -215,7 +215,13 @@ export default class NoteUser extends BaseModel {
    * 返回isMain的uid，没有的话返回首位
    */
   get mainCk() {
-    if (this.hasCk) {
+    // 优先查数据库
+    if (!lodash.isEmpty(this.mysUsers)) {
+      let mys = lodash.values(this.mysUsers)[0]
+      if (mys) return { ltuid: mys.ltuid, uid: mys.getUids("gs")?.[0] || "", ck: mys.ck }
+    }
+    // 降级查文件
+    if (this.ckData && !lodash.isEmpty(this.ckData)) {
       return (
         lodash.filter(this.ckData, (ck) => ck.isMain)[0] ||
         lodash.values(this.ckData)[0]
@@ -230,9 +236,19 @@ export default class NoteUser extends BaseModel {
    */
   get cks() {
     let cks = {};
-    if (!this.hasCk) {
-      return cks;
-    }
+    // 优先查数据库
+    lodash.forEach(this.mysUsers, (mys) => {
+      if (mys && mys.ltuid && mys.ck) {
+        cks[mys.ltuid] = {
+          ckData: { ltuid: mys.ltuid, ck: mys.ck, uid: mys.getUids("gs")?.[0] || "" },
+          ck: mys.ck,
+          uids: mys.getUids("gs") || [],
+        }
+      }
+    })
+    if (!lodash.isEmpty(cks)) return cks
+    // 降级查文件
+    if (!this.ckData) return cks;
     for (let uid in this.ckData) {
       let ck = this.ckData[uid];
       if (ck && ck.ltuid && ck.uid) {
