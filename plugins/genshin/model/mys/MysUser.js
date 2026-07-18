@@ -237,6 +237,22 @@ export default class MysUser extends BaseModel {
     }
   }
 
+  // 遍历所有MysUser
+  static async forEach(fn) {
+    // 先尝试数据库
+    try {
+      let dbs = await MysUserDB.findAll()
+      for (let db of dbs) {
+        if (!db.ltuid) continue
+        let mys = await MysUser.create(db.ltuid)
+        if (mys && fn) {
+          if ((await fn(mys)) === false) break
+        }
+      }
+      return
+    } catch (e) { /* 降级到文件遍历 */ }
+  }
+
   // 清除当日缓存
   static async clearCache() {
     await MysUser.eachServ(async function (servCache) {
