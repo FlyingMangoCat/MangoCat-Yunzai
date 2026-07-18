@@ -9,8 +9,10 @@ import DailyCache from "./DailyCache.js";
 import BaseModel from "./BaseModel.js";
 import NoteUser from "./NoteUser.js";
 import MysApi from "./mysApi.js";
+import MysUtil from "./MysUtil.js";
 import lodash from "lodash";
 import fetch from "node-fetch";
+import { MysUserDB } from "../db/index.js";
 
 const tables = {
   // ltuid-uid 查询表
@@ -278,6 +280,38 @@ export default class MysUser extends BaseModel {
     await this.cache.kDel(tables.ck, this.ltuid);
     await this.cache.kDel(tables.qq, this.ltuid);
     logger.mark(`[删除失效ck][ltuid:${this.ltuid}]`);
+
+    // 同步删除数据库记录
+    try {
+      let dbMys = await MysUserDB.findByPk(this.ltuid)
+      if (dbMys) await dbMys.destroy()
+    } catch (e) { /* 数据库不可用时静默忽略 */ }
+  }
+
+  /** 获取指定游戏的uid列表 */
+  getUids(game = "gs") {
+    game = MysUtil.getGameKey(game)
+    return this.uids?.[game] || []
+  }
+
+  /** 获取uid数据 */
+  getUidData(uid, game = "gs") {
+    return { uid }
+  }
+
+  /** 保存到数据库 */
+  async saveDB() {
+    if (!this.ck || !this.ltuid) return false
+    try {
+      let dbMys = await MysUserDB.find(this.ltuid, true)
+      if (dbMys) {
+        dbMys.ck = this.ck
+        dbMys.type = this.type || "mys"
+        dbMys.device = this.device || ""
+        dbMys.uids = this.uids || {}
+        await dbMys.save()
+      }
+    } catch (e) { /* 数据库不可用时静默忽略 */ }
   }
 
   // 删除MysUser用户记录，会反向删除User中的记录及绑定关系

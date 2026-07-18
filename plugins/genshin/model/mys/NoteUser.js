@@ -9,6 +9,8 @@ import BaseModel from "./BaseModel.js";
 import lodash from "lodash";
 import MysUser from "./MysUser.js";
 import gsCfg from "../gsCfg.js";
+import { UserDB, UserGameDB } from "../db/index.js";
+import MysUtil from "./MysUtil.js";
 
 export default class NoteUser extends BaseModel {
   constructor(qq, data = null) {
@@ -19,6 +21,9 @@ export default class NoteUser extends BaseModel {
       return cacheObj;
     }
     this.qq = qq;
+    this.mysUsers = {};
+    this._games = MysUtil.getGameKey("");
+    this._games = { gs: { uid: "", data: {} }, sr: { uid: "", data: {} }, zzz: { uid: "", data: {} } };
     if (data) {
       this.ckData = this.ckData || {};
       for (let uid in data) {
@@ -51,6 +56,8 @@ export default class NoteUser extends BaseModel {
       return user;
     }
     let user = new NoteUser(qq, data);
+    // 尝试初始化数据库
+    await user.initDB();
     // 检查绑定uid (regUid)
     await user.getRegUid();
     // 传入data则使用，否则读取
@@ -58,7 +65,20 @@ export default class NoteUser extends BaseModel {
   }
 
   static async forEach(fn) {
-    // 初始化用户缓存
+    // 先尝试数据库遍历
+    try {
+      let dbs = await UserDB.findAll()
+      for (let db of dbs) {
+        let user = await NoteUser.create(db.id, db)
+        if (user && fn) {
+          if ((await fn(user)) === false) break
+        }
+      }
+      return
+    } catch (e) {
+      // 数据库不可用时，降级到文件遍历
+    }
+    // 文件式遍历（降级）
     let res = await gsCfg.getBingCk();
     for (let qq in res.noteCk) {
       let cks = res.noteCk[qq];
@@ -71,6 +91,93 @@ export default class NoteUser extends BaseModel {
         }
       }
     }
+  }
+
+  // 初始化数据库
+  async initDB(db = false) {
+    if (this.db && !db) return
+    try {
+      if (db && db !== true) {
+        this.db = db
+      } else {
+        this.db = await UserDB.find(this.qq, "qq")
+      }
+      // 如果数据库中有数据，则初始化MysUser
+      if (this.db?.ltuids) {
+        await this.initMysUser()
+        this._games = this.db.games || { gs: { uid: "", data: {} }, sr: { uid: "", data: {} }, zzz: { uid: "", data: {} } }
+      }
+    } catch (e) {
+      // 数据库不可用时，静默降级
+    }
+  }
+
+  // 初始化MysUser对象
+  async initMysUser() {
+    let ltuids = this.db?.ltuids || ""
+    this.mysUsers = {}
+    for (let ltuid of ltuids.split(",")) {
+      if (!ltuid) continue
+      let mys = await MysUser.create(ltuid)
+      if (mys) {
+        this.mysUsers[ltuid] = mys
+      }
+    }
+  }
+
+  // 保存到数据库
+  async save() {
+    if (!this.db) return
+    try {
+      let ltuids = []
+      lodash.forEach(this.mysUsers, mys => {
+        if (mys.ck && mys.ltuid) {
+          ltuids.push(mys.ltuid)
+        }
+      })
+      this.db.ltuids = ltuids.join(",")
+      let games = {}
+      lodash.forEach(this._games, (gameDs, game) => {
+        games[game] = { uid: gameDs.uid, data: {} }
+        lodash.forEach(gameDs.data, (ds, uid) => {
+          games[game].data[uid] = { uid: ds.uid, type: ds.type }
+        })
+      })
+      this.db.games = games
+      await this.db.save()
+    } catch (e) {
+      // 数据库保存失败时静默降级
+    }
+  }
+
+  getUidMapList(game = "gs", type = "all") {
+    game = MysUtil.getGameKey(game)
+    if (this._map?.[game]?.[type]) {
+      return this._map[game][type]
+    }
+    let uidMap = {}
+    let uidList = []
+    lodash.forEach(this.mysUsers, mys => {
+      if (!mys) return
+      lodash.forEach(mys.uids?.[game] || [], uid => {
+        uid = uid + ""
+        if (uid && !uidMap[uid]) {
+          uidMap[uid] = mys.getUidData(uid, game)
+          uidList.push(uidMap[uid])
+        }
+      })
+    })
+    // 文件式降级：从 ckData 中读取
+    lodash.forEach(this.ckData, (ck, uid) => {
+      if (ck && ck.uid && !uidMap[ck.uid]) {
+        uidMap[ck.uid] = ck
+        uidList.push(ck)
+      }
+    })
+    this._map = this._map || {}
+    this._map[game] = this._map[game] || {}
+    this._map[game][type] = { map: uidMap, list: uidList }
+    return this._map[game][type]
   }
 
   /**
@@ -89,7 +196,7 @@ export default class NoteUser extends BaseModel {
    * 当前用户是否具备CK
    */
   get hasCk() {
-    return this.ckData && !lodash.isEmpty(this.ckData);
+    return (this.ckData && !lodash.isEmpty(this.ckData)) || !lodash.isEmpty(this.mysUsers)
   }
 
   /**
@@ -176,17 +283,29 @@ export default class NoteUser extends BaseModel {
 
   /** 获取指定游戏uid */
   getUid(game = "gs") {
+    game = MysUtil.getGameKey(game)
+    let ds = this._games?.[game]
+    if (ds?.uid) return ds.uid
     return this.uid
   }
 
   /** 自动注册/绑定uid */
   async autoRegUid(uid, game = "gs") {
+    if (this.getUid(game)) return uid
+    game = MysUtil.getGameKey(game)
+    uid = uid + ""
+    let gameDs = this._games[game]
+    gameDs.data[uid] = { uid, type: "reg" }
+    gameDs.uid = uid
+    this._map = false
+    await this.save()
     return await this.setRegUid(uid, true)
   }
 
   /** 获取uid数据 */
   getUidData(uid, game = "gs") {
-    return this.ckData?.[uid] || null
+    if (!uid) uid = this.getUid(game)
+    return this.getUidMapList(game, "all").map[uid]
   }
 
   /**
