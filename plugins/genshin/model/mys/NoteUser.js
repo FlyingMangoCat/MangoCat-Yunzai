@@ -11,7 +11,6 @@ import MysUser from "./MysUser.js";
 import gsCfg from "../gsCfg.js";
 import { UserDB, UserGameDB } from "../db/index.js";
 import MysUtil from "./MysUtil.js";
-import fs from "node:fs";
 
 export default class NoteUser extends BaseModel {
   constructor(qq, data = null) {
@@ -97,21 +96,14 @@ export default class NoteUser extends BaseModel {
   // 初始化数据库
   async initDB(db = false) {
     if (this.db && !db) return
-    try {
-      if (db && db !== true) {
-        this.db = db
-      } else {
-        this.db = await UserDB.find(this.qq, "qq")
-      }
-      // 如果数据库中有数据，则初始化MysUser
-      if (this.db?.ltuids) {
-        await this.initMysUser()
-      }
-      // 始终从数据库读取游戏UID数据，不受ltuids影响
-      this._games = this.db?.games || { gs: { uid: "", data: {} }, sr: { uid: "", data: {} }, zzz: { uid: "", data: {} } }
-    } catch (e) {
-      // 数据库不可用时，静默降级
+    if (db && db !== true) {
+      this.db = db
+    } else {
+      this.db = await UserDB.find(this.qq, "qq")
     }
+    await this.initMysUser()
+    this._games = this.db.games || { gs: { uid: "", data: {} }, sr: { uid: "", data: {} }, zzz: { uid: "", data: {} } }
+    await this.save()
   }
 
   // 初始化MysUser对象
@@ -187,22 +179,7 @@ export default class NoteUser extends BaseModel {
    * 如果为绑定用户，优先获取ck对应uid，否则获取绑定uid
    */
   get uid() {
-    // 如果绑定有CK，则
-    if (this.hasCk) {
-      return this.mainCk?.uid;
-    }
-    // 从Redis获取绑定uid
-    if (this._regUid) return this._regUid;
-    // 兜底：从抽卡记录目录读取uid
-    try {
-      for (const dir of [`./data/gachaJson/${this.qq}`, `./data/srJson/${this.qq}`]) {
-        if (fs.existsSync(dir)) {
-          const uids = fs.readdirSync(dir).filter(f => /^\d{9}$/.test(f))
-          if (uids.length > 0) return uids[0]
-        }
-      }
-    } catch (e) { /* 忽略 */ }
-    return "";
+    return this.getUid()
   }
 
   /**
@@ -314,8 +291,19 @@ export default class NoteUser extends BaseModel {
   getUid(game = "gs") {
     game = MysUtil.getGameKey(game)
     let ds = this._games?.[game]
-    if (ds?.uid) return ds.uid
-    return this.uid
+    if (!ds?.uid) {
+      this.setMainUid("", game)
+    }
+    return this._games?.[game]?.uid || ""
+  }
+
+  /** 获取游戏数据对象 */
+  getGameDs(game = "gs") {
+    game = MysUtil.getGameKey(game)
+    if (!this._games[game]) {
+      this._games[game] = { uid: "", data: {} }
+    }
+    return this._games[game]
   }
 
   /** 自动注册/绑定uid */
