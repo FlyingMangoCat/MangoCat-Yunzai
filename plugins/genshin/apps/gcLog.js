@@ -214,6 +214,8 @@ export class gcLog extends plugin {
       name = `StarRail/${url}`;
       data.tplFile = `./plugins/genshin/resources/StarRail/html/${url}/${url}.html`;
       data.headStyle = `<style> .head_box { background: url(${this._path}/plugins/genshin/resources/StarRail/img/worldcard/星穹列车.png) #fff; background-position-x: -10px; background-repeat: no-repeat; background-size: 540px; background-position-y: -100px; </style>`;
+    } else {
+      data.tplFile = `./plugins/genshin/resources/html/${url}/${url}.html`;
     }
     return name;
   };
