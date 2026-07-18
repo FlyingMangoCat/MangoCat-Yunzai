@@ -1,7 +1,7 @@
 packages:
   - 'plugins/**'
 allowBuilds:
-  canvas: set this to true or false
-  nodejieba: set this to true or false
-  puppeteer: set this to true or false
-  sqlite3: set this to true or false
+  canvas: true
+  nodejieba: true
+  puppeteer: true
+  sqlite3: true
