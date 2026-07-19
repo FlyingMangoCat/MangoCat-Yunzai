@@ -49,7 +49,13 @@ export default class Puppeteer extends Renderer {
    */
   async browserInit() {
     if (this.browser) return this.browser
-    if (this.lock) return false
+    if (this._initPromise) return this._initPromise
+
+    this._initPromise = this._doBrowserInit()
+    return this._initPromise
+  }
+
+  async _doBrowserInit() {
     this.lock = true
 
     logger.info("puppeteer Chromium 启动中...")
@@ -90,13 +96,16 @@ export default class Puppeteer extends Renderer {
           logger.error("没有正确安装 Chromium 运行库")
         } else if (errMsg.includes(this.config.userDataDir)) {
           await fs.rm(this.config.userDataDir, { force: true, recursive: true }).catch(() => {})
-          return (this.lock = false)
+          this.lock = false
+          this._initPromise = null
+          return this.browserInit()
         }
       })
       if (this.lock === false) return this.browserInit()
     }
 
     this.lock = false
+    this._initPromise = null
     if (!this.browser) {
       logger.error("puppeteer Chromium 启动失败")
       return false
