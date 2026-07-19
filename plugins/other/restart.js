@@ -60,24 +60,12 @@ export class Restart extends plugin {
 
     try {
       await redis.set(this.key, data, { EX: 120 });
-      if (process.argv[1].includes("pm2")) {
-        let npm = await this.checkPnpm();
-        exec(`${npm} run restart`, { windowsHide: true }, (error, stdout, stderr) => {
-          if (error) {
-            redis.del(this.key);
-            this.e.reply(`操作失败！\n${error.stack}`);
-            logger.error(`重启失败\n${error.stack}`);
-          } else if (stdout) {
-            logger.mark("重启成功，运行已由前台转为后台");
-            logger.mark(`查看日志请用命令：${npm} run log`);
-            logger.mark(`停止后台运行命令：${npm} stop`);
-            process.exit();
-          }
-        });
-      } else {
-        await this.e.reply("当前为前台运行，重启将转为后台...");
-        Bot.restart()
-      }
+      // 直接调用 Bot.restart()，由 Bot 层处理 pm2/前台 等不同启动方式的逻辑
+      // 参考 Miao-Yunzai 的实现方式
+      const ret = await Bot.restart();
+      // 如果返回了，说明重启失败
+      this.e.reply(`重启失败\n${ret}`);
+      redis.del(this.key);
     } catch (error) {
       redis.del(this.key);
       let e = error.stack ?? error;
