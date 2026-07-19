@@ -5,14 +5,14 @@
  * 一个MysUser对应一个有效CK
  * 一个MysUser可能有多个MysUid关联记录
  */
-import DailyCache from "./DailyCache.js";
-import BaseModel from "./BaseModel.js";
-import NoteUser from "./NoteUser.js";
-import MysApi from "./mysApi.js";
-import MysUtil from "./MysUtil.js";
-import lodash from "lodash";
-import fetch from "node-fetch";
-import { MysUserDB } from "../db/index.js";
+import DailyCache from "./DailyCache.js"
+import BaseModel from "./BaseModel.js"
+import NoteUser from "./NoteUser.js"
+import MysApi from "./mysApi.js"
+import MysUtil from "./MysUtil.js"
+import lodash from "lodash"
+import fetch from "node-fetch"
+import { MysUserDB, UserDB } from "../db/index.js"
 
 const tables = {
   // ltuid-uid 查询表
@@ -35,123 +35,410 @@ const tables = {
   // ltuid 已删除的uid查询，供解绑ltuid后重新绑回的查询记录恢复
   // 表结构：Key-Value (key:ltuid，value：序列化uid数组）
   del: "del-detail",
-};
+}
 
 export default class MysUser extends BaseModel {
-  constructor(data) {
-    super();
-    let ltuid = data.ltuid;
+  constructor(ltuid) {
+    super()
     if (!ltuid) {
-      return false;
+      return false
     }
     // 检查实例缓存
-    let self = this._getThis("mys", ltuid);
+    let self = this._getThis("mys", ltuid)
     if (!self) {
-      self = this;
+      self = this
     }
-    // 单日有效缓存，不区分服务器
-    self.cache = self.cache || DailyCache.create();
-    self.uids = self.uids || {};
-    self.ltuid = data.ltuid;
-    self.ck = self.ck || data.ck;
-    self.qq = self.qq || data.qq || "pub";
-    if (data.uid || data.uids) {
-      self.addUid(data.uid || data.uids);
-    }
-    if (data.ck && data.ltuid) {
-      self.ckData = data;
-    }
-    // 单日有效缓存，使用uid区分不同服务器
-    let firstUid = Object.values(self.uids).flat()?.[0] || "mys";
-    self.servCache = self.servCache || DailyCache.create(firstUid);
-    return self._cacheThis();
+    this.ltuid = ltuid
+    return self._cacheThis()
   }
 
   // 可传入ltuid、cookie、ck对象来创建MysUser实例
+
+  get uid() {
+    return this.uids?.gs?.[0] || ""
+  }
+
   // 在仅传入ltuid时，必须是之前传入过的才能被识别
-  static async create(data) {
-    if (!data) {
-      return false;
+  static async create(ltuid, db = false) {
+    ltuid = MysUtil.getLtuid(ltuid)
+    if (!ltuid) {
+      return false
     }
-    if (lodash.isPlainObject(data)) {
-      return new MysUser(data);
+    let mys = new MysUser(ltuid)
+    await mys.initDB(db)
+    return mys
+  }
+
+  static async forEach(fn) {
+    let dbs = await MysUserDB.findAll()
+    for (let db of dbs) {
+      let mys = await MysUser.create(db.ltuid, db)
+      if (await fn(mys) === false) break
     }
-    // 传入cookie
-    let testRet = /ltuid=(\d{4,9})/g.exec(data);
-    if (testRet && testRet[1]) {
-      let ltuid = testRet[1];
-      // 尝试使用ltuid创建
-      let ckUser = await MysUser.create(ltuid);
-      if (ckUser) {
-        return ckUser;
-      }
-      let uids = await MysUser.getCkUid(data);
-      if (uids) {
-        return new MysUser({
-          ltuid,
-          ck: data,
-          type: "ck",
-          uids,
-        });
-      }
-    }
-    // 传入ltuid
-    if (/^\d{4,9}$/.test(data)) {
-      // 查找ck记录
-      let cache = DailyCache.create();
-      let ckData = await cache.kGet(tables.ck, data, true);
-      if (ckData && ckData.ltuid) {
-        return new MysUser(ckData);
-      }
-    }
-    return false;
   }
 
   // 根据uid获取查询MysUser
-  static async getByQueryUid(uid, onlySelfCk = false) {
-    let servCache = DailyCache.create(uid);
+  static async getByQueryUid(uid, game = "gs", onlySelfCk = false) {
+    let servCache = DailyCache.create(uid, game)
     // 查找已经查询过的ltuid || 分配最少查询的ltuid
 
     // 根据ltuid获取mysUser 封装
     const create = async function (ltuid) {
-      if (!ltuid) return false;
+      if (!ltuid) return false
 
-      let ckUser = await MysUser.create(ltuid);
+      let ckUser = await MysUser.create(ltuid)
       if (!ckUser) {
-        await servCache.zDel(tables.detail, ltuid);
-        return false;
+        await servCache.zDel(tables.detail, ltuid)
+        return false
       }
 
       // 若声明只获取自己ck，则判断uid是否为本人所有
-      if (onlySelfCk && !(await ckUser.ownUid(uid))) {
-        return false;
+      if (onlySelfCk && !ckUser.ownUid(uid, game)) {
+        return false
       }
 
-      return ckUser;
-    };
+      return ckUser
+    }
 
     // 根据uid检索已查询记录。包括公共CK/自己CK/已查询过
-    let ret = await create(await servCache.zKey(tables.detail, uid));
+    let ret = await create(await servCache.zKey(tables.detail, uid))
     if (ret) {
-      logger.mark(
-        `[米游社查询][uid：${uid}]${logger.green(`[使用已查询ck：${ret.ltuid}]`)}`,
-      );
-      return ret;
+      logger.mark(`[米游社查询][uid：${uid}]${logger.green(`[使用已查询ck：${ret.ltuid}]`)}`)
+      return ret
     }
 
     // 若只获取自身ck，则无需走到分配逻辑
-    if (onlySelfCk) return false;
+    if (onlySelfCk) return false
 
     // 使用CK池内容，分配次数最少的一个ltuid
-    ret = await create(await servCache.zMinKey(tables.detail));
+    ret = await create(await servCache.zMinKey(tables.detail))
     if (ret) {
-      logger.mark(
-        `[米游社查询][uid：${uid}]${logger.green(`[分配查询ck：${ret.ltuid}]`)}`,
-      );
-      return ret;
+      logger.mark(`[米游社查询][uid：${uid}]${logger.green(`[分配查询ck：${ret.ltuid}]`)}`)
+      return ret
     }
 
-    return false;
+    return false
+  }
+
+  static async eachServ(fn) {
+    await MysUtil.eachServ(async serv => {
+      await MysUtil.eachGame(async game => {
+        let servCache = DailyCache.create(serv, game)
+        await fn(servCache, serv, game)
+      })
+    })
+  }
+
+  // 清除当日缓存
+  static async clearCache() {
+    await MysUser.eachServ(async function (servCache) {
+      await servCache.empty(tables.detail)
+    })
+    let cache = DailyCache.create()
+    await cache.empty(tables.uid)
+    await cache.empty(tables.ck)
+    await cache.empty(tables.qq)
+  }
+
+  // 获取用户统计数据
+  static async getStatData() {
+    let totalCount = {}
+    let ret = { servs: {} }
+    await MysUser.eachServ(async function (servCache, serv) {
+      let data = await servCache.zStat(tables.detail)
+      let count = {}
+      let list = []
+      let query = 0
+      const stat = (type, num) => {
+        count[type] = num
+        totalCount[type] = (totalCount[type] || 0) + num
+      }
+      lodash.forEach(data, ds => {
+        list.push({
+          ltuid: ds.value,
+          num: ds.score,
+        })
+        if (ds.score < 30) {
+          query += ds.score
+        }
+      })
+      stat("total", list.length)
+      stat("normal", lodash.filter(list, ds => ds.num < 29).length)
+      stat("disable", lodash.filter(list, ds => ds.num > 30).length)
+      stat("query", query)
+      stat("last", count.normal * 30 - count.query)
+      list = lodash.sortBy(list, ["num", "ltuid"]).reverse()
+      ret.servs[serv] = {
+        list,
+        count,
+      }
+    })
+    ret.count = totalCount
+    return ret
+  }
+
+  /**
+   * 删除失效用户
+   * @returns {Promise<number>} 删除用户的个数
+   */
+  static async delDisable() {
+    let count = 0
+    await MysUser.eachServ(async function (servCache) {
+      let cks = await servCache.zGetDisableKey(tables.detail)
+      for (let ck of cks) {
+        if (await servCache.zDel(tables.detail, ck, true)) {
+          count++
+        }
+        let ckUser = await MysUser.create(ck)
+        if (ckUser) {
+          await ckUser.delWithUser()
+        }
+      }
+    })
+    return count
+  }
+
+  /**
+   * 检查CK状态
+   * @param ck 需要检查的CK
+   * @returns {Promise<boolean|{msg: string, uids: *[], status: number}>}
+   */
+  static async checkCkStatus(ck) {
+    let uids = []
+    let err = (msg, status = 2) => {
+      msg = msg + "\n请退出米游社并重新登录后，再次获取CK"
+      return {
+        status,
+        msg,
+        uids,
+      }
+    }
+    if (!ck) {
+      return false
+    }
+
+    // 检查绑定UID
+    uids = await MysUser.getCkUid(ck, true, true)
+    if (!uids.uids || uids.uids.length === 0) {
+      return err(uids.msg || "CK失效")
+    }
+    uids = uids.uids
+    let uid = uids[0]
+    let mys = new MysApi(uid + "", ck, { log: false })
+    // 体力查询
+    let noteRet = await mys.getData("dailyNote")
+    if (noteRet.retcode !== 0 || lodash.isEmpty(noteRet.data)) {
+      let msg = noteRet.message !== "OK" ? noteRet.message : "CK失效"
+      return err(`${msg || "CK失效或验证码"}，无法查询体力及角色信息`, 3)
+    }
+
+    // 角色查询
+    let roleRet = await mys.getData("character")
+    if (roleRet.retcode !== 0 || lodash.isEmpty(roleRet.data)) {
+      let msg = noteRet.message !== "OK" ? noteRet.message : "CK失效"
+      return err(`${msg || "CK失效"}，当前CK仍可查询体力，无法查询角色信息`, 2)
+    }
+
+    let detailRet = await mys.getData("detail", { avatar_id: 10000021 })
+    if (detailRet.retcode !== 0 || lodash.isEmpty(detailRet.data)) {
+      let msg = noteRet.message !== "OK" ? noteRet.message : "CK失效"
+      return err(`${msg || "CK失效"}，当前CK仍可查询体力及角色，但无法查询角色详情数据`, 1)
+    }
+    return {
+      uids,
+      status: 0,
+      msg: "CK状态正常",
+    }
+  }
+
+  // 不建议使用，为了兼容老数据格式，后续废弃
+  getCkInfo(game = "gs") {
+    return {
+      ck: this.ck,
+      uid: this.getUid(game),
+      qq: "",
+      ltuid: this.ltuid,
+    }
+  }
+
+  getUidData(uid, game = "gs") {
+    game = this.gameKey(game)
+    if (!this.hasUid(uid, game)) {
+      return false
+    }
+    return {
+      uid,
+      type: "ck",
+      ltuid: this.ltuid,
+      game,
+    }
+  }
+
+  hasUid(uid, game = "gs") {
+    game = this.gameKey(game)
+    return this.uids[game].includes(uid + "")
+  }
+
+  getUid(game = "gs") {
+    return this.getUids(game)[0]
+  }
+
+  getUids(game = "gs") {
+    let gameKey = this.gameKey(game)
+    return this.uids[gameKey] || []
+  }
+
+  getUidInfo() {
+    let ret = []
+    MysUtil.eachGame((game, gameDs) => {
+      let uids = this.getUids(game)
+      if (uids && uids.length > 0) {
+        ret.push(`【${gameDs.name}】:${uids.join(", ")}`)
+      }
+    })
+    return ret.join("\n")
+  }
+
+  /**
+   * 刷新mysUser的UID列表
+   * @returns {Promise<{msg: string, status: number}>}
+   */
+  async reqMysUid() {
+    let err = (msg = "error", status = 1) => {
+      return { status, msg }
+    }
+
+    let res = null
+    let msg = "error"
+    for (let serv of ["mys", "hoyolab"]) {
+      let roleRes = await this.getGameRole(serv)
+      if (roleRes?.retcode === 0) {
+        res = roleRes
+        if (serv === "hoyolab") {
+          this.type = "hoyolab"
+        }
+        break
+      }
+      if (roleRes.retcode * 1 === -100) {
+        msg = "该ck已失效，请重新登录获取"
+      }
+      msg = roleRes.message || "error"
+    }
+
+    if (!res) return err(msg)
+    let playerList = res?.data?.list || []
+    playerList = playerList.filter(v =>
+      ["hk4e_cn", "hkrpg_cn", "nap_cn", "nap_global", "hk4e_global", "hkrpg_global"].includes(
+        v.game_biz,
+      ),
+    )
+    if (!playerList || playerList.length <= 0) {
+      return err("该账号尚未绑定原神、星穹或绝区零 角色")
+    }
+
+    this.gsUids = []
+    this.srUids = []
+
+    /** 米游社默认展示的角色 */
+    for (let val of playerList) {
+      this.addUid(val.game_uid, this.getGameKey(val.game_biz))
+    }
+    await this.save()
+    return { status: 0, msg: "" }
+  }
+
+  // 根据game_biz 判断是哪个游戏
+  getGameKey(gameBiz) {
+    switch (gameBiz) {
+      case "hk4e_cn":
+      case "hk4e_global":
+        return "gs"
+      case "hkrpg_cn":
+      case "hkrpg_global":
+        return "sr"
+      case "nap_global":
+      case "nap_cn":
+        return "zzz"
+      default:
+        return "gs"
+    }
+  }
+
+  async getGameRole(serv = "mys") {
+    let ck = this.ck
+    let url = {
+      mys: "https://api-takumi.mihoyo.com/binding/api/getUserGameRolesByCookie",
+      hoyolab: "https://sg-public-api.hoyolab.com/binding/api/getUserGameRolesByCookie",
+    }
+
+    let res = await fetch(url[serv], { method: "get", headers: { Cookie: ck } })
+    if (!res.ok) return false
+    res = await res.json()
+
+    return res
+  }
+
+  // 获取米游社通行证id
+  async getUserFullInfo(serv = "mys") {
+    let ck = this.ck
+    let url = {
+      mys: "https://bbs-api.mihoyo.com/user/wapi/getUserFullInfo?gids=2",
+      hoyolab: "",
+    }
+    let res = await fetch(url[serv], {
+      method: "get",
+      headers: {
+        Cookie: ck,
+        Accept: "application/json, text/plain, */*",
+        Connection: "keep-alive",
+        Host: "bbs-api.mihoyo.com",
+        Origin: "https://m.bbs.mihoyo.com",
+        Referer: "https://m.bbs.mihoyo.com/",
+      },
+    })
+    if (!res.ok) return res
+    res = await res.json()
+    return res
+  }
+
+  getCache(game = "gs") {
+    if (!this.cache) {
+      this.cache = {}
+    }
+    const { cache } = this
+    if (game !== "config") {
+      game = this.gameKey(game)
+    }
+    if (!cache[game]) {
+      cache[game] = DailyCache.create(this.type, game)
+    }
+    return cache[game]
+  }
+
+  // 初始化数据
+  async initDB(db = false) {
+    if (this.db && !db) {
+      return
+    }
+    db = db && db !== true ? db : await MysUserDB.find(this.ltuid, true)
+    this.db = db
+    this.setCkData(db)
+  }
+
+  // 设置ck数据
+  setCkData(data = {}) {
+    this.ck = data.ck || this.ck || ""
+    this.type = data.type || this.type || "mys"
+    this.device = data.device || this.device || MysUtil.getDeviceGuid()
+    this.uids = this.uids || {}
+    let self = this
+    MysUtil.eachGame(game => {
+      self.uids[game] = data?.uids?.[game] || self.uids[game] || []
+    })
+  }
+
+  async save() {
+    await this.db.saveDB(this)
   }
 
   // 为当前MysUser绑定uid
@@ -165,454 +452,126 @@ export default class MysUser extends BaseModel {
     }
     if (lodash.isArray(uid)) {
       for (let u of uid) {
-        this.addUid(u, game);
+        this.addUid(u, game)
       }
-      return true;
+      return true
     }
-    uid = "" + uid;
-    if (/\d{9}/.test(uid) || uid === "pub") {
-      this.uids[game] = this.uids[game] || []
-      if (!this.uids[game].includes(uid)) {
-        this.uids[game].push(uid);
+    uid = "" + uid
+    if (/\d{8,10}/.test(uid)) {
+      let gameKey = this.gameKey(game)
+      let uids = this.uids[gameKey]
+      if (!uids.includes(uid)) {
+        uids.push(uid)
       }
     }
-    return true;
+    return true
+  }
+
+  hasGame(game = "gs") {
+    game = this.gameKey(game)
+    return this.uids[game]?.length > 0
   }
 
   // 初始化当前MysUser缓存记录
-  async initCache(user) {
-    if (!this.ltuid || !this.servCache || !this.ck) {
-      return;
-    }
-
-    // 为当前MysUser添加uid查询记录
-    if (!lodash.isEmpty(this.uids)) {
-      let allUids = lodash.isArray(this.uids) ? this.uids : Object.values(this.uids).flat()
-      for (let uid of allUids) {
-        if (uid !== "pub") {
-          await this.addQueryUid(uid);
-          // 添加ltuid-uid记录，用于判定ltuid绑定个数及自ltuid查询
-          await this.cache.zAdd(tables.uid, this.ltuid, uid);
-        }
-      }
-    } else {
-      console.log(`ltuid:${this.ltuid}暂无uid信息，请检查...`);
-      // 公共ck暂无uid信息不添加
-      if (user?.qq === "pub") {
-        return false;
-      }
-    }
-    // 缓存ckData，供后续缓存使用
-    // ltuid关系存储到与server无关的cache中，方便后续检索
-    if (this.ckData && this.ckData.ck) {
-      await this.cache.kSet(tables.ck, this.ltuid, this.ckData);
-    }
-
-    // 缓存qq，用于删除ltuid时查找
-    if (user && user.qq) {
-      let qq = user.qq === "pub" ? "pub" : user.qq * 1;
-      let qqArr = await this.cache.kGet(tables.qq, this.ltuid, true);
-      if (!lodash.isArray(qqArr)) {
-        qqArr = [];
-      }
-      if (!qqArr.includes(qq)) {
-        qqArr.push(qq);
-        await this.cache.kSet(tables.qq, this.ltuid, qqArr);
-      }
-    }
-
-    // 从删除记录中查找并恢复查询记录
-    let cacheSearchList = await this.servCache.get(
-      tables.del,
-      this.ltuid,
-      true,
-    );
-    // 这里不直接插入，只插入当前查询记录中没有的值
-    if (cacheSearchList && cacheSearchList.length > 0) {
-      for (let searchedUid of cacheSearchList) {
-        // 检查对应uid是否有新的查询记录
-        if (!(await this.getQueryLtuid(searchedUid))) {
-          await this.addQueryUid(searchedUid);
-        }
-      }
-    }
-    return true;
-  }
-
-  static async eachServ(fn) {
-    let servs = ["mys", "hoyolab"];
-    for (let serv of servs) {
-      let servCache = DailyCache.create(serv);
-      await fn(servCache, serv);
-    }
-  }
-
-  // 遍历所有MysUser
-  static async forEach(fn) {
-    // 先尝试数据库
-    try {
-      let dbs = await MysUserDB.findAll()
-      for (let db of dbs) {
-        if (!db.ltuid) continue
-        let mys = await MysUser.create(db.ltuid)
-        if (mys && fn) {
-          if ((await fn(mys)) === false) break
-        }
-      }
+  async initCache() {
+    if (!this.ltuid || !this.ck) {
       return
-    } catch (e) { /* 降级到文件遍历 */ }
+    }
+    let self = this
+    await MysUtil.eachGame(async game => {
+      let uids = self.uids[game]
+      await this.addQueryUid(uids, game)
+      let cache = self.getCache(game)
+      let cacheSearchList = await cache.get(tables.del, this.ltuid, true)
+      // 这里不直接插入，只插入当前查询记录中没有的值
+      if (cacheSearchList && cacheSearchList.length > 0) {
+        for (let searchedUid of cacheSearchList) {
+          // 检查对应uid是否有新的查询记录
+          if (!(await this.getQueryLtuid(searchedUid, game))) {
+            await this.addQueryUid(searchedUid, game)
+          }
+        }
+      }
+    })
+    return true
   }
 
-  // 清除当日缓存
-  static async clearCache() {
-    await MysUser.eachServ(async function (servCache) {
-      await servCache.empty(tables.detail);
-    });
-    let cache = DailyCache.create();
-    await cache.empty(tables.uid);
-    await cache.empty(tables.ck);
-    await cache.empty(tables.qq);
+  async disable(game = "gs") {
+    let cache = this.getCache(game)
+    await cache.zDel(tables.detail, this.ltuid)
+    logger.mark(`[标记无效ck][game:${game}, ltuid:${this.ltuid}`)
   }
 
-  async disable() {
-    await this.servCache.zDel(tables.detail, this.ltuid);
-    logger.mark(`[标记无效ck][ltuid:${this.ltuid}]`);
-  }
-
-  //
-  //
   /**
    * 删除缓存, 供User解绑CK时调用
-   * @param user
    * @returns {Promise<boolean>}
    */
-  async del(user) {
-    if (user && user.qq) {
-      let qqList = await this.cache.kGet(tables.qq, this.ltuid, true);
-      let newList = lodash.pull(qqList, user.qq * 1);
-      await this.cache.kSet(tables.qq, this.ltuid, newList);
-      if (newList.length > 0) {
-        // 如果数组还有其他元素，说明该ltuid还有其他绑定，不进行缓存删除
-        return false;
-      }
-    }
+  async del() {
+    // TODO 检查一ltuid多绑定的情况
     // 将查询过的uid缓存起来，以备后续重新绑定时恢复
-    let uids = await this.getQueryUids();
-    await this.servCache.set(tables.del, uids);
-
-    // 标记ltuid为失效
-    await this.servCache.zDel(tables.detail, this.ltuid);
-    await this.cache.zDel(tables.uid, this.ltuid);
-    await this.cache.kDel(tables.ck, this.ltuid);
-    await this.cache.kDel(tables.qq, this.ltuid);
-    logger.mark(`[删除失效ck][ltuid:${this.ltuid}]`);
-
-    // 同步删除数据库记录
-    try {
-      let dbMys = await MysUserDB.findByPk(this.ltuid)
-      if (dbMys) await dbMys.destroy()
-    } catch (e) { /* 数据库不可用时静默忽略 */ }
-  }
-
-  /** 获取指定游戏的uid列表 */
-  getUids(game = "gs") {
-    game = MysUtil.getGameKey(game)
-    return this.uids?.[game] || []
-  }
-
-  /** 获取uid数据 */
-  getUidData(uid, game = "gs") {
-    return { uid }
-  }
-
-  /** 保存到数据库 */
-  async saveDB() {
-    if (!this.ck || !this.ltuid) return false
-    try {
-      let dbMys = await MysUserDB.find(this.ltuid, true)
-      if (dbMys) {
-        dbMys.ck = this.ck
-        dbMys.type = this.type || "mys"
-        dbMys.device = this.device || ""
-        dbMys.uids = this.uids || {}
-        await dbMys.save()
-      }
-    } catch (e) { /* 数据库不可用时静默忽略 */ }
+    let self = this
+    await MysUtil.eachGame(async game => {
+      let uids = await this.getQueryUids(game)
+      let cache = self.getCache(game)
+      await cache.set(tables.del, uids)
+      // 标记ltuid为失效
+      await cache.zDel(tables.detail, this.ltuid)
+    })
+    await self.db.destroy()
+    self._delCache()
+    logger.mark(`[删除失效ck][ltuid:${this.ltuid}]`)
   }
 
   // 删除MysUser用户记录，会反向删除User中的记录及绑定关系
-  async delWithUser() {
+  async delWithUser(game = "gs") {
     // 查找用户
-    let qqArr = await this.cache.kGet(tables.qq, this.ltuid, true);
+    let cache = this.getCache(game)
+    let qqArr = await cache.kGet(tables.qq, this.ltuid, true)
     if (qqArr && qqArr.length > 0) {
       for (let qq of qqArr) {
-        let user = await NoteUser.create(qq);
+        let user = await NoteUser.create(qq)
         if (user) {
           // 调用user删除ck
-          await user.delCk(this.ltuid, false);
+          await user.delCk(this.ltuid, false)
         }
       }
     }
-    await this.del();
+    await this.del()
   }
 
   // 为当前用户添加uid查询记录
-  async addQueryUid(uid) {
+  async addQueryUid(uid, game = "gs") {
+    if (lodash.isArray(uid)) {
+      for (let u of uid) {
+        await this.addQueryUid(u, game)
+      }
+      return
+    }
     if (uid) {
-      await this.servCache.zAdd(tables.detail, this.ltuid, uid);
+      let cache = this.getCache(game)
+      await cache.zAdd(tables.detail, this.ltuid, uid)
     }
   }
 
   // 获取当前用户已查询uid列表
-  async getQueryUids() {
-    return await this.servCache.zList(tables.detail, this.ltuid);
+  async getQueryUids(game = "gs") {
+    let cache = this.getCache(game)
+    return await cache.zList(tables.detail, this.ltuid)
   }
 
   // 根据uid获取查询ltuid
-  async getQueryLtuid(uid) {
-    return await this.servCache.zKey(tables.detail, uid);
+  async getQueryLtuid(uid, game = "gs") {
+    let cache = this.getCache(game)
+    return await cache.zKey(tables.detail, uid)
   }
 
   // 检查指定uid是否为当前MysUser所有
-  async ownUid(uid) {
+  ownUid(uid, game = "gs") {
     if (!uid) {
-      return false;
+      return false
     }
-    let uidArr = (await this.cache.zList(tables.uid, this.ltuid)) || [];
-    return (
-      uid &&
-      uidArr
-        .join(",")
-        .split(",")
-        .includes(uid + "")
-    );
-  }
-
-  // 获取用户统计数据
-  static async getStatData() {
-    let totalCount = {};
-    let ret = { servs: {} };
-    await MysUser.eachServ(async function (servCache, serv) {
-      let data = await servCache.zStat(tables.detail);
-      let count = {};
-      let list = [];
-      let query = 0;
-      const stat = (type, num) => {
-        count[type] = num;
-        totalCount[type] = (totalCount[type] || 0) + num;
-      };
-      lodash.forEach(data, (ds) => {
-        list.push({
-          ltuid: ds.value,
-          num: ds.score,
-        });
-        if (ds.score < 30) {
-          query += ds.score;
-        }
-      });
-      stat("total", list.length);
-      stat("normal", lodash.filter(list, (ds) => ds.num < 29).length);
-      stat("disable", lodash.filter(list, (ds) => ds.num > 30).length);
-      stat("query", query);
-      stat("last", count.normal * 30 - count.query);
-      list = lodash.sortBy(list, ["num", "ltuid"]).reverse();
-      ret.servs[serv] = {
-        list,
-        count,
-      };
-    });
-    ret.count = totalCount;
-    return ret;
-  }
-
-  /**
-   * 删除失效用户
-   * @returns {Promise<number>} 删除用户的个数
-   */
-  static async delDisable() {
-    let count = 0;
-    await MysUser.eachServ(async function (servCache) {
-      let cks = await servCache.zGetDisableKey(tables.detail);
-      console.log("cks", cks);
-      for (let ck of cks) {
-        if (await servCache.zDel(tables.detail, ck, true)) {
-          count++;
-        }
-        let ckUser = await MysUser.create(ck);
-        console.log("ckUser", ck, ckUser);
-        if (ckUser) {
-          await ckUser.delWithUser();
-        }
-      }
-    });
-    return count;
-  }
-
-  static async getGameRole(ck, serv = "mys") {
-    let url = {
-      mys: "https://api-takumi.mihoyo.com/binding/api/getUserGameRolesByCookie",
-      hoyolab:
-        "https://api-os-takumi.mihoyo.com/binding/api/getUserGameRolesByCookie",
-    };
-
-    let res = await fetch(url[serv], {
-      method: "get",
-      headers: { Cookie: ck },
-    });
-    if (!res.ok) return false;
-    res = await res.json();
-    return res;
-  }
-
-  /** 获取ck信息（含游戏类型） */
-  getCkInfo(game = "gs") {
-    return { ...this.ckData, game }
-  }
-
-  // 获取米游社通行证id
-  static async getUserFullInfo(ck, serv = "mys") {
-    let url = {
-      mys: "https://bbs-api.mihoyo.com/user/wapi/getUserFullInfo?gids=2",
-      hoyolab: "",
-    };
-    let res = await fetch(url[serv], {
-      method: "get",
-      headers: {
-        Cookie: ck,
-        Accept: "application/json, text/plain, */*",
-        Connection: "keep-alive",
-        Host: "bbs-api.mihoyo.com",
-        Origin: "https://m.bbs.mihoyo.com",
-        Referer: " https://m.bbs.mihoyo.com/",
-      },
-    });
-    if (!res.ok) return res;
-    res = await res.json();
-
-    return res;
-  }
-
-  /**
-   * 获取ck对应uid列表
-   * @param ck 需要获取的ck
-   * @param withMsg false:uids / true: {uids, msg}
-   * @param force 忽略缓存，强制更新
-   * @returns {Promise<{msg: *, uids}>}
-   */
-  static async getCkUid(ck, withMsg = false, force = false) {
-    let ltuid = "";
-    let testRet = /ltuid=(\w{0,9})/g.exec(ck);
-    if (testRet && testRet[1]) {
-      ltuid = testRet[1];
-    }
-    let uids = [];
-    let ret = (msg, retUid) => {
-      retUid = lodash.map(retUid, (a) => a + "");
-      return withMsg ? { msg, uids: retUid } : retUid;
-    };
-    if (!ltuid) {
-      return ret("无ltuid", false);
-    }
-
-    if (!force) {
-      // 此处不使用DailyCache，做长期存储
-      uids = await redis.get(`Yz:genshin:mys:ltuid-uids:${ltuid}`);
-      if (uids) {
-        uids = DailyCache.decodeValue(uids, true);
-        if (uids && uids.length > 0) {
-          return ret("", uids);
-        }
-      }
-    }
-
-    uids = [];
-    let res = null;
-    let msg = "error";
-    for (let serv of ["mys", "hoyolab"]) {
-      let roleRes = await MysUser.getGameRole(ck, serv);
-      if (roleRes?.retcode === 0) {
-        res = roleRes;
-        break;
-      }
-      if (roleRes.retcode * 1 === -100) {
-        msg = "该ck已失效，请重新登录获取";
-      }
-      msg = roleRes.message || "error";
-    }
-    if (!res) return ret(msg, false);
-    if (!res.data.list || res.data.list.length <= 0) {
-      return ret("该账号尚未绑定原神或星穹角色", false);
-    }
-
-    for (let val of res.data.list) {
-      if (/\d{9}/.test(val.game_uid) && val.game_biz == "hk4e_cn") {
-        uids.push(val.game_uid + "");
-      }
-    }
-    if (uids.length > 0) {
-      await redis.set(
-        `Yz:genshin:mys:ltuid-uids:${ltuid}`,
-        JSON.stringify(uids),
-        { EX: 3600 * 24 * 90 },
-      );
-      return ret("", uids);
-    }
-    return ret(msg, false);
-  }
-
-  /**
-   * 检查CK状态
-   * @param ck 需要检查的CK
-   * @returns {Promise<boolean|{msg: string, uids: *[], status: number}>}
-   */
-  static async checkCkStatus(ck) {
-    let uids = [];
-    let err = (msg, status = 2) => {
-      msg = msg + "\n请退出米游社并重新登录后，再次获取CK";
-      return {
-        status,
-        msg,
-        uids,
-      };
-    };
-    if (!ck) {
-      return false;
-    }
-
-    // 检查绑定UID
-    uids = await MysUser.getCkUid(ck, true, true);
-    if (!uids.uids || uids.uids.length === 0) {
-      return err(uids.msg || "CK失效");
-    }
-    uids = uids.uids;
-    let uid = uids[0];
-    let mys = new MysApi(uid + "", ck, { log: false });
-    // 体力查询
-    let noteRet = await mys.getData("dailyNote");
-    if (noteRet.retcode !== 0 || lodash.isEmpty(noteRet.data)) {
-      let msg = noteRet.message !== "OK" ? noteRet.message : "CK失效";
-      return err(`${msg || "CK失效或验证码"}，无法查询体力及角色信息`, 3);
-    }
-
-    // 角色查询
-    let roleRet = await mys.getData("character");
-    if (roleRet.retcode !== 0 || lodash.isEmpty(roleRet.data)) {
-      let msg = noteRet.message !== "OK" ? noteRet.message : "CK失效";
-      return err(`${msg || "CK失效"}，当前CK仍可查询体力，无法查询角色信息`, 2);
-    }
-
-    let detailRet = await mys.getData("detail", { avatar_id: 10000021 });
-    if (detailRet.retcode !== 0 || lodash.isEmpty(detailRet.data)) {
-      let msg = noteRet.message !== "OK" ? noteRet.message : "CK失效";
-      return err(
-        `${msg || "CK失效"}，当前CK仍可查询体力及角色，但无法查询角色详情数据`,
-        1,
-      );
-    }
-    return {
-      uids,
-      status: 0,
-      msg: "CK状态正常",
-    };
+    let gameKey = this.gameKey(game)
+    let uids = this.uids[gameKey]
+    return uids.includes(uid + "")
   }
 }
