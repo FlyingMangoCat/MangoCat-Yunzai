@@ -148,6 +148,11 @@ export default class NoteUser extends BaseModel {
           uidList.push(ds)
         }
       })
+      // 补充主UID（兼容 data 为空但 uid 已设置的情况）
+      if (gameDs.uid && !uidMap[gameDs.uid]) {
+        uidMap[gameDs.uid] = { uid: gameDs.uid, type: "reg" }
+        uidList.push(uidMap[gameDs.uid])
+      }
     }
     this._map = this._map || {}
     this._map[game] = this._map[game] || {}
