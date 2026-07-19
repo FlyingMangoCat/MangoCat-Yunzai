@@ -56,24 +56,24 @@ export default class Puppeteer extends Renderer {
 
     let connectFlag = false
     try {
+      // 获取Mac地址
       if (!mac) {
         mac = await this.getMac()
         this.browserMacKey = `Yz:chromium:browserWSEndpoint:${mac}`
       }
-      let browserUrl = this.config.wsEndpoint
-      try {
-        browserUrl = (await redis.get(this.browserMacKey)) || browserUrl
-      } catch {}
+      // 是否有browser实例
+      const browserUrl = (await redis.get(this.browserMacKey)) || this.config.wsEndpoint
       if (browserUrl) {
         try {
           const browserWSEndpoint = await puppeteer.connect({ browserWSEndpoint: browserUrl })
+          // 如果有实例，直接使用
           if (browserWSEndpoint) {
             this.browser = browserWSEndpoint
             connectFlag = true
           }
           logger.info(`puppeteer Chromium 连接成功 ${browserUrl}`)
         } catch (err) {
-          try { await redis.del(this.browserMacKey) } catch {}
+          await redis.del(this.browserMacKey)
         }
       }
     } catch {}
