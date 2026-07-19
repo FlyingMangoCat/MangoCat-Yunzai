@@ -272,8 +272,8 @@ export default class User extends base {
       { key: "zzz", name: "绝区零" },
     ]
     lodash.forEach(uids, ds => {
-      ds.uidList = user.getUidMapList?.(ds.key)?.list || []
-      ds.uid = user.getUid?.(ds.key) || ""
+      ds.uidList = user.getUidList(ds.key)
+      ds.uid = user.getUid(ds.key)
       lodash.forEach(ds.uidList, uidDs => {
         if (ds.key !== "zzz") {
           uidDs.face = ""

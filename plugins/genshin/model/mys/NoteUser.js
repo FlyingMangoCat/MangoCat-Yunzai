@@ -313,6 +313,11 @@ export default class NoteUser extends BaseModel {
     }
   }
 
+  /** 获取uid列表 */
+  getUidList(game = "gs") {
+    return this.getUidMapList(game, "all").list
+  }
+
   /** 获取uid数据 */
   getUidData(uid, game = "gs") {
     if (!uid) uid = this.getUid(game)
