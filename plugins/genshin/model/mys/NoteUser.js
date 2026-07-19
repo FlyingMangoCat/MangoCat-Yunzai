@@ -5,12 +5,12 @@
  *  User可以注册UID，通过 getRegUid / setRegUid
  *  一个User可以绑定多个MysUser CK，绑定MysUser
  */
-import BaseModel from "./BaseModel.js";
-import lodash from "lodash";
-import MysUser from "./MysUser.js";
-import gsCfg from "../gsCfg.js";
-import { UserDB, UserGameDB } from "../db/index.js";
-import MysUtil from "./MysUtil.js";
+import BaseModel from "./BaseModel.js"
+import lodash from "lodash"
+import MysUser from "./MysUser.js"
+import gsCfg from "../gsCfg.js"
+import { UserDB, UserGameDB } from "../db/index.js"
+import MysUtil from "./MysUtil.js"
 
 export default class NoteUser extends BaseModel {
   constructor(qq, data = null) {
@@ -22,8 +22,6 @@ export default class NoteUser extends BaseModel {
     }
     this.qq = qq;
     this.mysUsers = {};
-    this._games = MysUtil.getGameKey("");
-    this._games = { gs: { uid: "", data: {} }, sr: { uid: "", data: {} }, zzz: { uid: "", data: {} } };
     if (data) {
       this.ckData = this.ckData || {};
       for (let uid in data) {
@@ -102,7 +100,7 @@ export default class NoteUser extends BaseModel {
       this.db = await UserDB.find(this.qq, "qq")
     }
     await this.initMysUser()
-    this._games = this.db.games || { gs: { uid: "", data: {} }, sr: { uid: "", data: {} }, zzz: { uid: "", data: {} } }
+    this._games = this.db.games
     await this.save()
   }
 
@@ -121,27 +119,7 @@ export default class NoteUser extends BaseModel {
 
   // 保存到数据库
   async save() {
-    if (!this.db) return
-    try {
-      let ltuids = []
-      lodash.forEach(this.mysUsers, mys => {
-        if (mys.ck && mys.ltuid) {
-          ltuids.push(mys.ltuid)
-        }
-      })
-      this.db.ltuids = ltuids.join(",")
-      let games = {}
-      lodash.forEach(this._games, (gameDs, game) => {
-        games[game] = { uid: gameDs.uid, data: {} }
-        lodash.forEach(gameDs.data, (ds, uid) => {
-          games[game].data[uid] = { uid: ds.uid, type: ds.type }
-        })
-      })
-      this.db.games = games
-      await this.db.save()
-    } catch (e) {
-      // 数据库保存失败时静默降级
-    }
+    await this.db.saveDB(this)
   }
 
   getUidMapList(game = "gs", type = "all") {
