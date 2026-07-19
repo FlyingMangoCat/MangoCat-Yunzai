@@ -440,10 +440,15 @@ export default class MysUser extends BaseModel {
     this.type = data.type || this.type || "mys"
     this.device = data.device || this.device || MysUtil.getDeviceGuid()
     this.uids = this.uids || {}
-    let self = this
-    MysUtil.eachGame(game => {
-      self.uids[game] = data?.uids?.[game] || self.uids[game] || []
-    })
+    // 兼容旧格式：uids 为数组 ["123456789"] 时视为 gs 游戏
+    if (lodash.isArray(data.uids)) {
+      this.uids.gs = data.uids.map(v => v + "")
+    } else {
+      let self = this
+      MysUtil.eachGame(game => {
+        self.uids[game] = data?.uids?.[game] || self.uids[game] || []
+      })
+    }
   }
 
   async save() {
