@@ -51,7 +51,7 @@ export default class MysUser extends BaseModel {
     }
     // 单日有效缓存，不区分服务器
     self.cache = self.cache || DailyCache.create();
-    self.uids = self.uids || [];
+    self.uids = self.uids || {};
     self.ltuid = data.ltuid;
     self.ck = self.ck || data.ck;
     self.qq = self.qq || data.qq || "pub";
@@ -62,7 +62,8 @@ export default class MysUser extends BaseModel {
       self.ckData = data;
     }
     // 单日有效缓存，使用uid区分不同服务器
-    self.servCache = self.servCache || DailyCache.create(self.uids[0] || "mys");
+    let firstUid = Object.values(self.uids).flat()?.[0] || "mys";
+    self.servCache = self.servCache || DailyCache.create(firstUid);
     return self._cacheThis();
   }
 
@@ -154,17 +155,18 @@ export default class MysUser extends BaseModel {
   }
 
   // 为当前MysUser绑定uid
-  addUid(uid) {
+  addUid(uid, game = "gs") {
     if (lodash.isArray(uid)) {
       for (let u of uid) {
-        this.addUid(u);
+        this.addUid(u, game);
       }
       return true;
     }
     uid = "" + uid;
     if (/\d{9}/.test(uid) || uid === "pub") {
-      if (!this.uids.includes(uid)) {
-        this.uids.push(uid);
+      this.uids[game] = this.uids[game] || []
+      if (!this.uids[game].includes(uid)) {
+        this.uids[game].push(uid);
       }
     }
     return true;
@@ -178,7 +180,8 @@ export default class MysUser extends BaseModel {
 
     // 为当前MysUser添加uid查询记录
     if (!lodash.isEmpty(this.uids)) {
-      for (let uid of this.uids) {
+      let allUids = lodash.isArray(this.uids) ? this.uids : Object.values(this.uids).flat()
+      for (let uid of allUids) {
         if (uid !== "pub") {
           await this.addQueryUid(uid);
           // 添加ltuid-uid记录，用于判定ltuid绑定个数及自ltuid查询
