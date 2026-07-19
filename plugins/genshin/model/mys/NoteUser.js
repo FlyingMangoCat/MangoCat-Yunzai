@@ -367,22 +367,24 @@ export default class NoteUser extends BaseModel {
     return this.getUidMapList(game, "all").map[uid]
   }
 
-  /**
-   * 切换绑定CK生效的UID
-   * @param uid 要切换的UID
-   */
-  async setMainUid(uid = "") {
-    // 兼容传入index
-    if (uid * 1 <= this.ckUids.length) uid = this.ckUids[uid];
-    // 非法值，以及未传入时使用当前或首个有效uid
-    uid = (uid || this.uid) * 1;
-    // 设置主uid
-    lodash.forEach(this.ckData, (ck) => {
-      ck.isMain = ck.uid * 1 === uid * 1;
-    });
-    // 保存CK数据
-    this._saveCkData();
-    await this.setRegUid(uid, true);
+  /** 切换绑定CK生效的UID */
+  setMainUid(uid = "", game = "gs", save = true) {
+    this._map = false
+    game = this.gameKey(game)
+    if (uid < 100 || !uid) {
+      let uids = this.getUidList(game)
+      uid = (uids?.[uid] || uids?.[0])?.uid || ""
+    }
+    if (!uid) {
+      return false
+    }
+    if (this.hasUid(uid, game)) {
+      let gameDs = this.getGameDs(game)
+      gameDs.uid = uid
+    }
+    if (save) {
+      this.save()
+    }
   }
 
   /**
