@@ -259,8 +259,8 @@ export default class User extends base {
     if (!uid) return;
     uid = uid[0];
     let user = await this.user();
-    await user.setRegUid(uid, true);
-    return await this.e.reply(`绑定成功uid:${uid}`, false, { at: true });
+    await user.addRegUid(uid, this.e);
+    return await this.showUid();
   }
 
   /** #uid */

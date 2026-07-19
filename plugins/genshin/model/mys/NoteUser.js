@@ -300,6 +300,19 @@ export default class NoteUser extends BaseModel {
     return await this.setRegUid(uid, true)
   }
 
+  /** 添加注册UID（保存到数据库） */
+  addRegUid(uid, game = "gs", save = true) {
+    game = this.gameKey(game)
+    uid = uid + ""
+    let gameDs = this.getGameDs(game)
+    gameDs.data[uid] = { uid, type: "reg" }
+    this._map = false
+    this.setMainUid(uid, game, false)
+    if (save) {
+      this.save()
+    }
+  }
+
   /** 获取uid数据 */
   getUidData(uid, game = "gs") {
     if (!uid) uid = this.getUid(game)
