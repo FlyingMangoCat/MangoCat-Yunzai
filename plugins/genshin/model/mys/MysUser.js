@@ -60,6 +60,15 @@ export default class MysUser extends BaseModel {
 
   // 在仅传入ltuid时，必须是之前传入过的才能被识别
   static async create(ltuid, db = false) {
+    // 传入ck对象时，直接创建并从对象数据初始化
+    if (lodash.isPlainObject(ltuid)) {
+      let data = ltuid
+      ltuid = MysUtil.getLtuid(data)
+      if (!ltuid) return false
+      let mys = new MysUser(ltuid)
+      mys.setCkData(data)
+      return mys
+    }
     ltuid = MysUtil.getLtuid(ltuid)
     if (!ltuid) {
       return false
