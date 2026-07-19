@@ -98,7 +98,17 @@ export default class User extends base {
 
     logger.mark(`${this.e.logFnc} 检查cookie正常 [uid:${this.uid}]`);
 
-    await user.addCk(this.getCk());
+    // 创建 MysUser 实例并保存到数据库（照搬喵喵流程）
+    let mys = await MysUser.create(this.ltuid)
+    if (mys) {
+      let data = {}
+      data.ck = this.ck
+      data.ltuid = this.ltuid
+      mys.setCkData(data)
+      await user.addMysUser(mys)
+      await mys.initCache()
+      await user.save()
+    }
 
     logger.mark(
       `${this.e.logFnc} 保存cookie成功 [uid:${this.uid}] [ltuid:${this.ltuid}]`,
