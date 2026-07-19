@@ -9,7 +9,7 @@ import BaseModel from "./BaseModel.js"
 import lodash from "lodash"
 import MysUser from "./MysUser.js"
 import gsCfg from "../gsCfg.js"
-import { UserDB, UserGameDB } from "../db/index.js"
+import { UserDB, UserGameDB, MysUserDB } from "../db/index.js"
 import MysUtil from "./MysUtil.js"
 
 export default class NoteUser extends BaseModel {
