@@ -4,7 +4,7 @@ import lodash from "lodash"
 import puppeteer from "puppeteer"
 import timers from "node:timers/promises"
 import fs from "node:fs/promises"
-import cfg from "../../lib/config/config.js"
+import cfg from "../../../lib/config/config.js"
 
 const _path = process.cwd()
 let mac = ""
