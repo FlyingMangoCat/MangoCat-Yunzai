@@ -156,6 +156,13 @@ export default class MysUser extends BaseModel {
 
   // 为当前MysUser绑定uid
   addUid(uid, game = "gs") {
+    if (lodash.isPlainObject(uid)) {
+      // 兼容 {gs:[uid], sr:[uid]} 格式（从喵喵数据库迁移的数据）
+      lodash.forEach(uid, (uids, g) => {
+        this.addUid(uids, g);
+      });
+      return true;
+    }
     if (lodash.isArray(uid)) {
       for (let u of uid) {
         this.addUid(u, game);
