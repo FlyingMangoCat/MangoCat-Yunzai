@@ -285,10 +285,7 @@ export default class User extends base {
       ds.uidList = user.getUidList(ds.key)
       ds.uid = user.getUid(ds.key)
       lodash.forEach(ds.uidList, uidDs => {
-        if (ds.key !== "zzz") {
-          uidDs.face = ""
-          uidDs.banner = ""
-        } else {
+        if (ds.key === "zzz") {
           uidDs.zzz_face = true
           uidDs.zzz_banner = true
         }
