@@ -265,29 +265,35 @@ export default class User extends base {
 
   /** #uid */
   async showUid() {
-    let user = await this.user();
-    if (!user.hasCk) {
-      await this.e.reply(`当前绑定uid：${user.uid || "无"}`, false, {
-        at: true,
-      });
-      return;
-    }
-    let ckData = user.ckData;
-    let uid = user.uid * 1;
-    let msg = [
-      `当前uid：${uid}`,
-      "当前绑定cookie Uid列表",
-      "通过【#uid+序号】来切换uid",
-    ];
-    let count = 0;
-    Object.keys(ckData).forEach((v) => {
-      let tmp = `${++count}. ${ckData[v].region_name}: ${ckData[v].uid}`;
-      if (ckData[v].uid * 1 === uid) {
-        tmp += " ☑";
-      }
-      msg.push(tmp);
-    });
-    await this.e.reply(msg.join("\n"));
+    let user = await this.user()
+    let uids = [
+      { key: "gs", name: "原神" },
+      { key: "sr", name: "星穹铁道" },
+      { key: "zzz", name: "绝区零" },
+    ]
+    lodash.forEach(uids, ds => {
+      ds.uidList = user.getUidList?.(ds.key) || []
+      ds.uid = user.getUid?.(ds.key) || ""
+      lodash.forEach(ds.uidList, uidDs => {
+        uidDs.face = ""
+        uidDs.banner = ""
+      })
+    })
+    return this.e.reply([
+      await this.e.runtime.render("genshin", "html/user/uid-list", { uids }, { retType: "base64" }),
+      segment.button(
+        [
+          { text: "绑定UID", input: "#绑定uid" },
+          { text: "切换UID", input: "#uid" },
+          { text: "删除UID", input: "#删除uid" },
+        ],
+        [
+          { text: "角色", callback: "#角色" },
+          { text: "体力", callback: "#体力" },
+          { text: "抽卡", callback: "#抽卡记录" },
+        ],
+      ),
+    ])
   }
 
   /** 切换uid */
