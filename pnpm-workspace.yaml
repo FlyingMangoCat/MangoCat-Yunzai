@@ -1,5 +1,6 @@
 packages:
   - 'plugins/**'
+  - 'renderers/**'
 allowBuilds:
   canvas: true
   nodejieba: true
