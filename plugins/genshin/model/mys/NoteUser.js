@@ -136,6 +136,42 @@ export default class NoteUser extends BaseModel {
         this.mysUsers[ltuid] = mys
       }
     }
+    // ltuids 为空时，从 MysUserDB 按 games 中的 UID 补充绑定关系
+    if (!ltuids && this.db?.games) {
+      let games = this.db.games
+      let allUids = []
+      MysUtil.eachGame(game => {
+        let ds = games[game]
+        if (ds?.uid) allUids.push(ds.uid)
+        lodash.forEach(ds?.data, d => { if (d?.uid) allUids.push(d.uid) })
+      })
+      if (allUids.length > 0) {
+        let dbs = await MysUserDB.findAll()
+        for (let db of dbs) {
+          let uids = db.uids || {}
+          // 兼容旧格式：uids 为数组 ["123456789"] 时视为 gs 游戏
+          if (lodash.isArray(uids)) {
+            for (let uid of uids) {
+              if (allUids.includes(uid + "")) {
+                let mys = await MysUser.create(db.ltuid, db)
+                if (mys) this.mysUsers[db.ltuid] = mys
+                break
+              }
+            }
+          } else {
+            for (let game of ['gs', 'sr', 'zzz']) {
+              for (let uid of (uids[game] || [])) {
+                if (allUids.includes(uid + "")) {
+                  let mys = await MysUser.create(db.ltuid, db)
+                  if (mys) this.mysUsers[db.ltuid] = mys
+                  break
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
 
   async save() {
