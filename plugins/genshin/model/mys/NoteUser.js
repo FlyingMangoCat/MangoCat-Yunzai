@@ -130,12 +130,23 @@ export default class NoteUser extends BaseModel {
         let dbs = await MysUserDB.findAll()
         for (let db of dbs) {
           let uids = db.uids || {}
-          for (let game of ['gs', 'sr', 'zzz']) {
-            for (let uid of (uids[game] || [])) {
+          // 兼容旧格式：uids 为数组 ["123456789"] 时视为 gs 游戏
+          if (lodash.isArray(uids)) {
+            for (let uid of uids) {
               if (allUids.includes(uid + "")) {
                 let mys = await MysUser.create(db.ltuid, db)
                 if (mys) this.mysUsers[db.ltuid] = mys
                 break
+              }
+            }
+          } else {
+            for (let game of ['gs', 'sr', 'zzz']) {
+              for (let uid of (uids[game] || [])) {
+                if (allUids.includes(uid + "")) {
+                  let mys = await MysUser.create(db.ltuid, db)
+                  if (mys) this.mysUsers[db.ltuid] = mys
+                  break
+                }
               }
             }
           }
