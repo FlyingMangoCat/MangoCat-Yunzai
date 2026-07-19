@@ -161,13 +161,16 @@ export default class NoteUser extends BaseModel {
         }
       })
     })
-    // 文件式降级：从 ckData 中读取
-    lodash.forEach(this.ckData, (ck, uid) => {
-      if (ck && ck.uid && !uidMap[ck.uid]) {
-        uidMap[ck.uid] = ck
-        uidList.push(ck)
-      }
-    })
+    // 从游戏数据中补充注册的UID
+    if (type === "all") {
+      let gameDs = this.getGameDs(game)
+      lodash.forEach(gameDs.data, ds => {
+        if (ds.uid && !uidMap[ds.uid]) {
+          uidMap[ds.uid] = ds
+          uidList.push(ds)
+        }
+      })
+    }
     this._map = this._map || {}
     this._map[game] = this._map[game] || {}
     this._map[game][type] = { map: uidMap, list: uidList }

@@ -5,7 +5,6 @@ import fs from "node:fs";
 import common from "../../../lib/common/common.js";
 import MysUser from "./mys/MysUser.js";
 import MysInfo from "./mys/mysInfo.js";
-import MysApi from "./mys/mysApi.js";
 
 export default class User extends base {
   constructor(e) {
@@ -272,38 +271,19 @@ export default class User extends base {
       { key: "sr", name: "星穹铁道" },
       { key: "zzz", name: "绝区零" },
     ]
-    let mysInfo = await MysInfo.init(this.e, "roleIndex").catch(() => null)
-    for (let ds of uids) {
-      let uidMapData = user.getUidMapList?.(ds.key) || { list: [] }
-      ds.uidList = uidMapData.list
+    lodash.forEach(uids, ds => {
+      ds.uidList = user.getUidMapList?.(ds.key)?.list || []
       ds.uid = user.getUid?.(ds.key) || ""
-      for (let uidDs of ds.uidList) {
+      lodash.forEach(ds.uidList, uidDs => {
         if (ds.key !== "zzz") {
-          // 尝试获取玩家信息
-          if (mysInfo && mysInfo.uid && mysInfo.ckInfo?.ck) {
-            try {
-              let mysApi = new MysApi(uidDs.uid, mysInfo.ckInfo.ck, { game: ds.key })
-              let charData = await mysApi.getData("index")
-              if (charData?.retcode === 0 && charData?.data?.avatars?.length > 0) {
-                let avatar = charData.data.avatars[0]
-                uidDs.name = avatar.name || avatar.id
-                uidDs.level = avatar.level
-                // 尝试从 gacha 角色图获取头像
-                let imgPath = `/img/gacha/character/${avatar.name}.png`
-                if (fs.existsSync(`${this._path}/plugins/genshin/resources${imgPath}`)) {
-                  uidDs.face = imgPath
-                }
-              }
-            } catch (e) {
-              // 忽略获取失败，留空即可
-            }
-          }
+          uidDs.face = ""
+          uidDs.banner = ""
         } else {
           uidDs.zzz_face = true
           uidDs.zzz_banner = true
         }
-      }
-    }
+      })
+    })
     return this.e.reply([
       await this.e.runtime.render("genshin", "html/user/uid-list", { uids }, { retType: "base64" }),
       segment.button(
