@@ -59,6 +59,10 @@ class UserDB extends BaseModel {
     id = type === "qq" ? "" + id : type + id
     // DB查询
     let user = await UserDB.findByPk(id)
+    // 兼容 id 在数据库中存储为数字的情况
+    if (!user && type === "qq") {
+      user = await UserDB.findByPk(Number(id))
+    }
     if (!user) {
       user = await UserDB.build({
         id,
