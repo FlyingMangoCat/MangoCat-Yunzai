@@ -8,7 +8,7 @@
 import lodash from 'lodash'
 import Base from './MiaoBase.js'
 import { Data } from '../components/index.js'
-import { Character } from './Character.js'
+import Character from './Character.js'
 
 Data.createDir('/data/UserData', 'root')
 Data.createDir('/data/PlayerData/gs', 'root')
