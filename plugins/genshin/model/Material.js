@@ -2,7 +2,7 @@
 * 角色培养及天赋材料
 * */
 import lodash from 'lodash'
-import Base from './Base.js'
+import Base from './BaseProxy.js'
 import { Data, Meta } from '../components/index.js'
 
 let data = Data.readJSON('resources/meta-gs/material/data.json', 'miao')
