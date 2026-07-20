@@ -5,6 +5,7 @@ import fs from "node:fs";
 import common from "../../../lib/common/common.js";
 import MysUser from "./mys/MysUser.js";
 import MysInfo from "./mys/mysInfo.js";
+import Player from "./Player.js";
 
 export default class User extends base {
   constructor(e) {
@@ -285,7 +286,16 @@ export default class User extends base {
       ds.uidList = user.getUidList(ds.key)
       ds.uid = user.getUid(ds.key)
       lodash.forEach(ds.uidList, uidDs => {
-        if (ds.key === "zzz") {
+        if (ds.key !== "zzz") {
+          let player = Player.create(uidDs.uid, ds.key)
+          if (player) {
+            uidDs.name = player.name
+            uidDs.level = player.level
+            let imgs = player?.faceImgs || {}
+            uidDs.face = imgs.face
+            uidDs.banner = imgs.banner
+          }
+        } else {
           uidDs.zzz_face = true
           uidDs.zzz_banner = true
         }

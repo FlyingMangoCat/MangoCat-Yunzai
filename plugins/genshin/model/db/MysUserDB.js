@@ -39,8 +39,6 @@ const COLUMNS = {
 
 class MysUserDB extends BaseModel {
   static async find(ltuid = "", create = false) {
-    // 确保 ltuid 为数字类型，避免字符串与 INTEGER 主键不匹配
-    ltuid = Number(ltuid) || ltuid
     // DB查询
     let mys = await MysUserDB.findByPk(ltuid)
     if (!mys && create) {
