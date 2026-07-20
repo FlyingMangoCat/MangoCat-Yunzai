@@ -1,0 +1,1 @@
+export { Version, Cfg } from '../index.js'
