@@ -364,8 +364,7 @@ export default class MysUser extends BaseModel {
     }
   }
 
-  async getGameRole(serv = "mys") {
-    let ck = this.ck
+  static async getGameRole(ck, serv = "mys") {
     let url = {
       mys: "https://api-takumi.mihoyo.com/binding/api/getUserGameRolesByCookie",
       hoyolab: "https://sg-public-api.hoyolab.com/binding/api/getUserGameRolesByCookie",
@@ -378,9 +377,12 @@ export default class MysUser extends BaseModel {
     return res
   }
 
+  async getGameRole(serv = "mys") {
+    return MysUser.getGameRole(this.ck, serv)
+  }
+
   // 获取米游社通行证id
-  async getUserFullInfo(serv = "mys") {
-    let ck = this.ck
+  static async getUserFullInfo(ck, serv = "mys") {
     let url = {
       mys: "https://bbs-api.mihoyo.com/user/wapi/getUserFullInfo?gids=2",
       hoyolab: "",
@@ -399,6 +401,10 @@ export default class MysUser extends BaseModel {
     if (!res.ok) return res
     res = await res.json()
     return res
+  }
+
+  async getUserFullInfo(serv = "mys") {
+    return MysUser.getUserFullInfo(this.ck, serv)
   }
 
   getCache(game = "gs") {
