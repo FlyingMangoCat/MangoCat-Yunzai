@@ -29,8 +29,8 @@ export default class Player {
 
   get faceImgs() {
     return {
-      face: "/common/item/face.webp",
-      banner: `/meta-${this.game}/character/common/imgs/banner.webp`
+      face: "common/item/face.webp",
+      banner: `meta-${this.game}/character/common/imgs/banner.webp`
     }
   }
 }
