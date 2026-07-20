@@ -18,7 +18,7 @@ export class sendLog extends plugin {
       ],
     });
 
-    this.lineNum = 50;
+    this.lineNum = 100;
     this.maxNum = 800;
 
     this.logFile = `./logs/command.${moment().format("YYYY-MM-DD")}.log`;
