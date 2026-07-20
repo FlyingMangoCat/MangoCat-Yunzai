@@ -60,15 +60,6 @@ export default class MysUser extends BaseModel {
 
   // 在仅传入ltuid时，必须是之前传入过的才能被识别
   static async create(ltuid, db = false) {
-    // 传入ck对象时，直接创建并从对象数据初始化
-    if (lodash.isPlainObject(ltuid)) {
-      let data = ltuid
-      ltuid = MysUtil.getLtuid(data)
-      if (!ltuid) return false
-      let mys = new MysUser(ltuid)
-      mys.setCkData(data)
-      return mys
-    }
     ltuid = MysUtil.getLtuid(ltuid)
     if (!ltuid) {
       return false
@@ -440,15 +431,10 @@ export default class MysUser extends BaseModel {
     this.type = data.type || this.type || "mys"
     this.device = data.device || this.device || MysUtil.getDeviceGuid()
     this.uids = this.uids || {}
-    // 兼容旧格式：uids 为数组 ["123456789"] 时视为 gs 游戏
-    if (lodash.isArray(data.uids)) {
-      this.uids.gs = data.uids.map(v => v + "")
-    } else {
-      let self = this
-      MysUtil.eachGame(game => {
-        self.uids[game] = data?.uids?.[game] || self.uids[game] || []
-      })
-    }
+    let self = this
+    MysUtil.eachGame(game => {
+      self.uids[game] = data?.uids?.[game] || self.uids[game] || []
+    })
   }
 
   async save() {
