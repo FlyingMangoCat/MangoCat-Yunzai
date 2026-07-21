@@ -27,7 +27,7 @@ export default class MysApi {
   }
 
   getUrl(type, data = {}) {
-    let urlMap = this.apiTool.getUrlMap(data);
+    let urlMap = this.apiTool.getUrlMap({ ...data, deviceId: this.device });
     if (!urlMap[type]) return false;
 
     let { url, query = "", body = "", sign = "" } = urlMap[type];
@@ -61,6 +61,14 @@ export default class MysApi {
   }
 
   async getData(type, data = {}, cached = false) {
+    if (!this._device_fp && !data?.Getfp && !data?.headers?.["x-rpc-device_fp"]) {
+      this._device_fp = await this.getData("getFp", {
+        seed_id: this.generateSeed(16),
+        Getfp: true,
+      })
+    }
+    if (type === "getFp" && !data?.Getfp) return this._device_fp
+
     let { url, headers, body } = this.getUrl(type, data);
 
     if (!url) return false;
@@ -74,6 +82,10 @@ export default class MysApi {
     if (data.headers) {
       headers = { ...headers, ...data.headers };
       delete data.headers;
+    }
+
+    if (type !== "getFp" && !headers["x-rpc-device_fp"] && this._device_fp?.data?.device_fp) {
+      headers["x-rpc-device_fp"] = this._device_fp.data.device_fp
     }
 
     let param = {
@@ -256,5 +268,14 @@ export default class MysApi {
     }
 
     return null;
+  }
+
+  generateSeed(length = 16) {
+    const characters = "0123456789abcdef"
+    let result = ""
+    for (let i = 0; i < length; i++) {
+      result += characters[Math.floor(Math.random() * characters.length)]
+    }
+    return result
   }
 }
