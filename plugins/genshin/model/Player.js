@@ -58,6 +58,10 @@ export default class Player extends Base {
       }
     }
     let imgs = char?.imgs || {}
+    // 绝区零没有角色元数据，返回空让 showUid 使用默认占位图
+    if (this.game === 'zzz') {
+      return { face: '', banner: '' }
+    }
     return {
       face: imgs.face || '/common/item/face.webp',
       banner: imgs.banner || `/meta-${this.game}/character/common/imgs/banner.webp`
