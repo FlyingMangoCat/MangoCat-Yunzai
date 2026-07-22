@@ -82,6 +82,21 @@ Bot.adapter.push(
     }
 
     message(msg) {
+      // 处理控制台命令
+      if (msg === "启动icqq") {
+        Bot.setIcqqConfig(true, true)
+        Bot.startIcqq().catch(err => {
+          Bot.makeLog("error", `icqq 启动失败: ${err.message}`, this.id)
+        })
+        return
+      }
+      if (msg === "关闭icqq") {
+        Bot.stopIcqq().catch(err => {
+          Bot.makeLog("error", `icqq 关闭失败: ${err.message}`, this.id)
+        })
+        return
+      }
+
       fs.appendFile(`${this.path}history`, `${Date.now().toString(36)}:${msg}\n`, "utf8")
       const data = {
         bot: Bot[this.id],

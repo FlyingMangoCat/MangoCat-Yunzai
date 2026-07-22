@@ -1,0 +1,9 @@
+# icqq 登录配置
+# 首次启动时检测 qq.yaml 是否配置了 QQ 号，若配置则自动启用 icqq
+# 之后可通过控制台命令或修改此文件控制 icqq 的启停
+
+# 是否启用 icqq 登录
+enable: false
+
+# 是否自动登录（启动时自动登录）
+autoLogin: false
