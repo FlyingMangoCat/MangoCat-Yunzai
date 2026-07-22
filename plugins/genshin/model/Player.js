@@ -98,7 +98,12 @@ export default class Player extends Base {
   // 设置基础数据
   setBasicData (ds) {
     if (!ds) return
+    this.name = ds.name || this.name || ''
+    this.level = ds.level || this.level || ''
     this.face = ds.face || this.face || ''
+    this.word = ds.word || this.word || ''
+    this.card = ds.card || this.card || ''
+    this.sign = ds.sign || this.sign || ''
     this._avatars = ds.avatars || this._avatars || {}
   }
 
