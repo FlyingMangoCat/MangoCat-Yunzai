@@ -7,6 +7,15 @@ import sizeOf from 'image-size'
 const miaoPath = process.cwd() + '/plugins/genshin'
 
 const rPath = `${miaoPath}/resources`
+const liulianRoot = `${process.cwd()}/plugins/liulian-plugin/resources`
+
+const liulianImgMap = {
+  face: 'genshin/logo/role',
+  qFace: 'genshin/logo/role',
+  side: 'genshin/gacha/character',
+  gacha: 'genshin/gacha/character',
+  splash: 'genshin/gacha/character',
+}
 const CharImg = {
 
   // 获取角色的插画
@@ -98,6 +107,16 @@ const CharImg = {
         imgs[key] = `${nPath}${path2}.${fileType}`
       } else if (fs.existsSync(`${rPath}/${nPath}/${path}.${fileType}`)) {
         imgs[key] = `${nPath}${path}.${fileType}`
+      }
+      // 尝试从 liulian-plugin 资源目录获取
+      if (!imgs[key] && liulianImgMap[key]) {
+        const liuDir = `${liulianRoot}/${liulianImgMap[key]}`
+        for (const ext of ['.png', '.webp', '.jpg']) {
+          if (fs.existsSync(`${liuDir}/${name}${ext}`)) {
+            imgs[key] = `../../liulian-plugin/resources/${liulianImgMap[key]}/${name}${ext}`
+            break
+          }
+        }
       }
     }
     let tAdd = (key, path) => {
