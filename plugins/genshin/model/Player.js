@@ -10,6 +10,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import Base from './MiaoBase.js'
 import Character from './Character.js'
+import { zzzroleId } from '../../liulian-plugin/config/roleId.js'
 
 const playerDataDir = path.join(process.cwd(), 'data', 'PlayerData')
 
@@ -60,17 +61,18 @@ export default class Player extends Base {
       }
     }
     let imgs = char?.imgs || {}
-    // 绝区零：从面板数据读取角色名，匹配 liulian-plugin 资源
+    // 绝区零：从面板数据读取角色ID，匹配 liulian-plugin 资源
     if (this.game === 'zzz') {
       let avatarName = ''
-      if (this.face) avatarName = this.face
-      if (!avatarName) {
+      let avatarId = ''
+      if (this.face) avatarId = this.face
+      if (!avatarId) {
         let keys = lodash.keys(this._avatars)
-        if (keys.length > 0) {
-          let first = this._avatars[keys[0]]
-          avatarName = first.name || ''
-        }
+        if (keys.length > 0) avatarId = keys[0]
       }
+      // 用角色ID查 zzzroleId 拿官方名称
+      let roleNames = zzzroleId[avatarId]
+      if (roleNames && roleNames.length > 0) avatarName = roleNames[0]
       let cwd = process.cwd().replace(/\\/g, '/')
       return {
         face: avatarName ? `${cwd}/plugins/liulian-plugin/resources/zzz/gacha/${avatarName}.png` : '/common/item/face.webp',
