@@ -181,7 +181,7 @@ export default class User extends base {
       return false;
     } else {
       res.data.list = res.data.list.filter((v) =>
-        ["hk4e_cn", "hkrpg_cn", "hk4e_global", "hkrpg_global"].includes(
+        ["hk4e_cn", "hkrpg_cn", "nap_cn", "hk4e_global", "hkrpg_global", "nap_global"].includes(
           v.game_biz,
         ),
       );
@@ -231,31 +231,35 @@ export default class User extends base {
       return o;
     });
 
-    ck[this.uid] = {
-      uid: this.uid,
-      qq: this.e.user_id,
-      ck: this.ck,
-      ltuid: this.ltuid,
-      login_ticket: this.login_ticket,
-      region: this.region,
-      region_name: this.region_name,
-      device_id: this.getGuid(),
-      isMain: true,
-    };
-
-    this.allUid.forEach((v) => {
-      if (!v.uid) return;
-      ck[v.uid] = {
-        uid: v.uid,
+    if (this.uid && this.ck) {
+      ck[this.uid] = {
+        uid: this.uid,
         qq: this.e.user_id,
         ck: this.ck,
         ltuid: this.ltuid,
-        region_name: v.region_name,
-        region: v.region,
+        login_ticket: this.login_ticket,
+        region: this.region,
+        region_name: this.region_name,
         device_id: this.getGuid(),
-        isMain: false,
+        isMain: true,
       };
-    });
+    }
+
+    if (this.ck) {
+      this.allUid.forEach((v) => {
+        if (!v.uid) return;
+        ck[v.uid] = {
+          uid: v.uid,
+          qq: this.e.user_id,
+          ck: this.ck,
+          ltuid: this.ltuid,
+          region_name: v.region_name,
+          region: v.region,
+          device_id: this.getGuid(),
+          isMain: false,
+        };
+      });
+    }
     return ck;
   }
 
