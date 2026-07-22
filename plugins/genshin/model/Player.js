@@ -58,11 +58,22 @@ export default class Player extends Base {
       }
     }
     let imgs = char?.imgs || {}
-    // 绝区零：无角色元数据时使用独立资源路径
+    // 绝区零：从面板数据读取角色名，匹配 liulian-plugin 资源
     if (this.game === 'zzz') {
+      let avatarName = ''
+      // 优先从 face 字段获取角色名
+      if (this.face) avatarName = this.face
+      // 否则从 _avatars 中取第一个角色
+      if (!avatarName) {
+        let keys = lodash.keys(this._avatars)
+        if (keys.length > 0) {
+          let first = this._avatars[keys[0]]
+          avatarName = first.name || ''
+        }
+      }
       return {
-        face: imgs.face || '/common/item/face.webp',
-        banner: imgs.banner || '/ZZZero/img/other/banner.png'
+        face: avatarName ? `../../liulian-plugin/resources/zzz/gacha/${avatarName}.png` : '/common/item/face.webp',
+        banner: '/ZZZero/img/other/banner.png'
       }
     }
     return {
