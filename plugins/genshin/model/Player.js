@@ -9,7 +9,7 @@ import lodash from 'lodash'
 import fs from 'node:fs'
 import path from 'node:path'
 import Base from './MiaoBase.js'
-import { zzzroleId } from '../../liulian-plugin/config/roleId.js'
+import { zzzroleId, roleId, starroleId } from '../../liulian-plugin/config/roleId.js'
 
 const playerDataDir = path.join(process.cwd(), 'data', 'PlayerData')
 
@@ -49,18 +49,18 @@ export default class Player extends Base {
 
   // 玩家头像
   get faceImgs () {
-    // 绝区零：从面板数据读取角色ID，匹配 liulian-plugin 资源
+    let avatarName = ''
+    let avatarId = ''
+    if (this.face) avatarId = this.face
+    if (!avatarId) {
+      let keys = lodash.keys(this._avatars)
+      if (keys.length > 0) avatarId = keys[0]
+    }
+    // 用角色ID查对应角色表拿官方名称
+    let roleMap = this.game === 'zzz' ? zzzroleId : this.game === 'sr' ? starroleId : roleId
+    let roleNames = roleMap[avatarId]
+    if (roleNames && roleNames.length > 0) avatarName = roleNames[0]
     if (this.game === 'zzz') {
-      let avatarName = ''
-      let avatarId = ''
-      if (this.face) avatarId = this.face
-      if (!avatarId) {
-        let keys = lodash.keys(this._avatars)
-        if (keys.length > 0) avatarId = keys[0]
-      }
-      // 用角色ID查 zzzroleId 拿官方名称
-      let roleNames = zzzroleId[avatarId]
-      if (roleNames && roleNames.length > 0) avatarName = roleNames[0]
       let cwd = process.cwd().replace(/\\/g, '/')
       return {
         face: avatarName ? `${cwd}/plugins/liulian-plugin/resources/zzz/gacha/${avatarName}.png` : '/common/item/face.webp',
@@ -68,7 +68,7 @@ export default class Player extends Base {
       }
     }
     return {
-      face: '/common/item/face.webp',
+      face: avatarName ? `/meta-${this.game}/character/${avatarName}/imgs/face.webp` : '/common/item/face.webp',
       banner: `/meta-${this.game}/character/common/imgs/banner.webp`
     }
   }
