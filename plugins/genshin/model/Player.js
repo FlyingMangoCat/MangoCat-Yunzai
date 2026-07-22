@@ -6,13 +6,12 @@
  * 参照喵喵 plugin 的 Player 实现
  */
 import lodash from 'lodash'
+import fs from 'node:fs'
+import path from 'node:path'
 import Base from './MiaoBase.js'
-import { Data } from '../components/index.js'
 import Character from './Character.js'
 
-Data.createDir('/data/UserData', 'root')
-Data.createDir('/data/PlayerData/gs', 'root')
-Data.createDir('/data/PlayerData/sr', 'root')
+const playerDataDir = path.join(process.cwd(), 'data', 'PlayerData')
 
 export default class Player extends Base {
   constructor (uid, game = 'gs') {
@@ -43,7 +42,7 @@ export default class Player extends Base {
   }
 
   get _file () {
-    return `/data/PlayerData/${this.game}/${this.uid}.json`
+    return path.join(playerDataDir, this.game, `${this.uid}.json`)
   }
 
   // 玩家头像
@@ -89,9 +88,17 @@ export default class Player extends Base {
 
   /**
    * 重新加载json文件
+   * 从 bot 根目录 data/PlayerData 读取
    */
   reload () {
-    let data = Data.readJSON(this._file, 'root')
+    let data = {}
+    if (fs.existsSync(this._file)) {
+      try {
+        data = JSON.parse(fs.readFileSync(this._file, 'utf8'))
+      } catch (e) {
+        // ignore
+      }
+    }
     this.setBasicData(data)
   }
 
