@@ -273,7 +273,7 @@ export default class apiTool {
             }),
         /** 首页信息 */
         index: {
-          url: `${hostRecord}game_record/app/nap/api/index`,
+          url: `${hostRecord}game_record/app/zzz/api/index`,
           query: `role_id=${this.uid}&server=${this.server}`,
         },
         /** 角色详情 */
