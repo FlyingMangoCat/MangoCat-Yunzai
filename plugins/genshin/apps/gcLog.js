@@ -51,6 +51,10 @@ export class gcLog extends plugin {
           reg: "^#*(原神|星铁|崩坏星穹铁道|铁道)?(抽卡|抽奖|角色|武器|常驻|up|新手|光锥)池*统计$",
           fnc: "logCount",
         },
+        {
+          reg: "^#*(星铁|崩坏星穹铁道|铁道)?更新抽卡记录$",
+          fnc: "updateGachaLog",
+        },
       ],
     });
 
@@ -225,5 +229,38 @@ export class gcLog extends plugin {
     let url = this.srHead("logCount", data);
     let img = await puppeteer.screenshot(url, data);
     if (img) await this.reply(img);
+  }
+
+  /** #星铁更新抽卡记录 — 通过已绑定的cookie自动获取authkey更新抽卡记录 */
+  async updateGachaLog() {
+    let gachaLog = new GachaLog(this.e);
+    let ok = await gachaLog.getAuthKeyFromCookie();
+    if (!ok) return;
+
+    /** 获取authkey成功，开始更新各卡池记录 */
+    this.e.reply("链接获取成功，数据获取中……");
+
+    gachaLog.fetchFullLog = await gachaLog.isFetchFullLog();
+
+    let MakeMsg = [];
+    let tmpMsg = "";
+    for (let i in gachaLog.pool) {
+      gachaLog.type = gachaLog.pool[i].type;
+      gachaLog.typeName = gachaLog.pool[i].typeName;
+      let res = await gachaLog.updateLog();
+      if (res) {
+        tmpMsg += `[${gachaLog.typeName}]记录获取成功，更新${res.num}条\n`;
+      }
+      if (i <= 1) await common.sleep(500);
+    }
+    MakeMsg.push(tmpMsg);
+    MakeMsg.push(
+      `\n抽卡记录更新完成，您还可回复\n【${this.e.isSr ? "*" : "#"}全部记录】统计全部抽卡数据\n【${this.e.isSr ? "*光锥" : "#武器"}记录】统计${this.e.isSr ? "星铁光锥" : "武器"}池数据\n【${this.e.isSr ? "*" : "#"}角色统计】按卡池统计数据\n【${this.e.isSr ? "*" : "#"}导出记录】导出记录数据`,
+    );
+    await this.e.reply(MakeMsg);
+
+    if (gachaLog.fetchFullLog) {
+      await gachaLog.setFetchFullLog(false);
+    }
   }
 }

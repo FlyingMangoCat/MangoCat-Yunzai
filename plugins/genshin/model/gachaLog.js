@@ -5,6 +5,8 @@ import fs from "node:fs"
 import common from "../../../lib/common/common.js"
 import gsCfg from "./gsCfg.js"
 import { Character, Weapon } from "#liulian.models"
+import MysUser from "./mys/MysUser.js"
+import md5 from "md5"
 
 export default class GachaLog extends base {
   constructor(e) {
@@ -1060,5 +1062,110 @@ export default class GachaLog extends base {
         return this.e.isSr ? "prod_official_cht" : "os_cht" // 港澳台服
     }
     return "cn_gf01"
+  }
+
+  /**
+   * 通过已绑定的 cookie/stoken 自动获取抽卡 authkey
+   * 无需用户手动从游戏复制抽卡链接
+   * @returns {Promise<boolean>}
+   */
+  async getAuthKeyFromCookie() {
+    /** 获取用户的 MysInfo 和 cookie */
+    let mysInfo = await this.e.runtime.getMysInfo("cookie")
+    if (!mysInfo || !mysInfo.ckInfo || !mysInfo.ckInfo.ck) {
+      this.e.reply("请先绑定米游社cookie\n发送【#绑定cookie】+你的cookie")
+      return false
+    }
+
+    let ck = mysInfo.ckInfo.ck
+
+    /** 获取游戏角色列表 */
+    let roleRes = await MysUser.getGameRole(ck)
+    if (!roleRes || roleRes.retcode !== 0) {
+      this.e.reply("获取游戏角色失败，cookie可能已失效，请重新绑定")
+      return false
+    }
+
+    let playerList = roleRes?.data?.list || []
+    let gameBiz = this.e.isSr ? "hkrpg_cn" : "hk4e_cn"
+    let gameRole = playerList.find(v => v.game_biz === gameBiz)
+
+    if (!gameRole) {
+      this.e.reply(this.e.isSr ? "未找到星穹铁道角色，请确认已绑定正确cookie" : "未找到原神角色，请确认已绑定正确cookie")
+      return false
+    }
+
+    this.uid = gameRole.game_uid
+    let region = this.getServer()
+
+    this.e.reply(`正在获取抽卡authkey...`)
+
+    /** 调用 authkey API */
+    let authkey = await this._requestAuthKey(ck, String(this.uid), gameBiz, region)
+    if (!authkey) {
+      this.e.reply("获取authkey失败，可能是cookie权限不足，请尝试重新绑定cookie")
+      return false
+    }
+
+    /** 保存 authkey 到 Redis（有效期24小时） */
+    await redis.setEx(`${this.urlKey}${this.uid}`, 86400, authkey)
+    await redis.setEx(this.uidKey, 3600 * 24 * 30, String(this.uid))
+
+    this.e.reply(`authkey获取成功，UID:${this.uid}，开始更新抽卡记录...`)
+    return true
+  }
+
+  /**
+   * 请求米哈游 authkey API
+   */
+  async _requestAuthKey(ck, uid, gameBiz, region) {
+    let url = "https://api-takumi.mihoyo.com/common/auth/api/getAuthKey"
+    let body = JSON.stringify({
+      auth_appid: "webview_gacha",
+      game_biz: gameBiz,
+      uid: uid,
+      region: region,
+    })
+
+    let headers = {
+      "Cookie": ck,
+      "Content-Type": "application/json",
+      "x-rpc-app_version": "2.40.1",
+      "x-rpc-client_type": "5",
+      "User-Agent": `Mozilla/5.0 (Linux; Android 12; Yz-${md5(uid).substring(0, 5)}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.73 Mobile Safari/537.36 miHoYoBBS/2.40.1`,
+      "Referer": "https://webstatic.mihoyo.com/",
+      "DS": this._getDs("", body, region),
+    }
+
+    let res = await fetch(url, { method: "POST", headers, body }).catch(err => {
+      logger.error(`[获取authkey失败] ${err}`)
+    })
+
+    if (!res || !res.ok) {
+      logger.error(`[获取authkey失败] HTTP ${res?.status}`)
+      return false
+    }
+
+    let json = await res.json()
+    if (json.retcode !== 0 || !json?.data?.authkey) {
+      logger.error(`[获取authkey失败] retcode:${json.retcode} msg:${json.message}`)
+      return false
+    }
+
+    return json.data.authkey
+  }
+
+  /**
+   * 生成米哈游 API 的 DS 签名
+   */
+  _getDs(q = "", b = "", region = "") {
+    let n = "xV8v4Qu54lUKrEYFZkJhB8cuOh9Asafs"
+    if (/os_|official/.test(region)) {
+      n = "okr4obncj8bw5a65hbnn5oo6ixjc3l9w"
+    }
+    let t = Math.round(new Date().getTime() / 1000)
+    let r = Math.floor(Math.random() * 900000 + 100000)
+    let DS = md5(`salt=${n}&t=${t}&r=${r}&b=${b}&q=${q}`)
+    return `${t},${r},${DS}`
   }
 }
