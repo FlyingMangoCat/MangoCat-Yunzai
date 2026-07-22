@@ -61,26 +61,24 @@ export default class Player extends Base {
     let roleNames = roleMap[avatarId]
     if (roleNames && roleNames.length > 0) avatarName = roleNames[0]
     if (this.game === 'zzz') {
-      let cwd = process.cwd().replace(/\\/g, '/')
       return {
-        face: avatarName ? `${cwd}/plugins/liulian-plugin/resources/zzz/gacha/${avatarName}.png` : '/common/item/face.webp',
+        face: avatarName ? `../../liulian-plugin/resources/zzz/gacha/${avatarName}.png` : '/common/item/face.webp',
         banner: '/ZZZero/img/other/banner.png'
       }
     }
-    let cwd = process.cwd().replace(/\\/g, '/')
     if (this.game === 'sr') {
-      let srPath = `${cwd}/plugins/liulian-plugin/resources/星铁/role/${avatarName}.webp`
-      if (!avatarName || !fs.existsSync(srPath)) {
-        let pngPath = `${cwd}/plugins/liulian-plugin/resources/星铁/role/${avatarName}.png`
-        srPath = fs.existsSync(pngPath) ? pngPath : ''
+      let cwd = process.cwd().replace(/\\/g, '/')
+      let relPath = `../../liulian-plugin/resources/星铁/role/${avatarName}`
+      if (avatarName && fs.existsSync(`${cwd}/plugins/liulian-plugin/resources/星铁/role/${avatarName}.webp`)) {
+        return { face: `${relPath}.webp`, banner: `/meta-${this.game}/character/common/imgs/banner.webp` }
       }
-      return {
-        face: srPath || '/common/item/face.webp',
-        banner: `/meta-${this.game}/character/common/imgs/banner.webp`
+      if (avatarName && fs.existsSync(`${cwd}/plugins/liulian-plugin/resources/星铁/role/${avatarName}.png`)) {
+        return { face: `${relPath}.png`, banner: `/meta-${this.game}/character/common/imgs/banner.webp` }
       }
+      return { face: '/common/item/face.webp', banner: `/meta-${this.game}/character/common/imgs/banner.webp` }
     }
     return {
-      face: avatarName ? `${cwd}/plugins/liulian-plugin/resources/genshin/logo/role/${avatarName}.png` : '/common/item/face.webp',
+      face: avatarName ? `../../liulian-plugin/resources/genshin/logo/role/${avatarName}.png` : '/common/item/face.webp',
       banner: `/meta-${this.game}/character/common/imgs/banner.webp`
     }
   }
