@@ -85,6 +85,18 @@ export class user extends plugin {
       this.reply("请发送绑定的uid", false, { at: true });
       return true;
     }
+
+    if (/^#?星铁绑定uid$/i.test(this.e.msg)) {
+      this.setContext("saveSrUid");
+      this.reply("请发送绑定的星铁uid", false, { at: true });
+      return true;
+    }
+
+    if (/^#?绝区零绑定uid$/i.test(this.e.msg)) {
+      this.setContext("saveZzzUid");
+      this.reply("请发送绑定的绝区零uid", false, { at: true });
+      return true;
+    }
   }
 
   /** 绑定uid */
@@ -98,6 +110,36 @@ export class user extends plugin {
     this.e.msg = "#绑定" + this.e.msg;
     this.bingUid();
     this.finish("saveUid");
+  }
+
+  /** 绑定星铁uid */
+  saveSrUid() {
+    if (!this.e.msg) return;
+    let uid = this.e.msg.match(/[1|2|5-9][0-9]{8}/g);
+    if (!uid) {
+      this.reply("星铁UID输入错误", false, { at: true });
+      return;
+    }
+    this.e.isSr = true;
+    this.e.game = "sr";
+    this.e.msg = "#星铁绑定" + this.e.msg;
+    this.bingUid();
+    this.finish("saveSrUid");
+  }
+
+  /** 绑定绝区零uid */
+  saveZzzUid() {
+    if (!this.e.msg) return;
+    let uid = this.e.msg.match(/[1-9][0-9]{8,9}/g);
+    if (!uid) {
+      this.reply("绝区零UID输入错误", false, { at: true });
+      return;
+    }
+    this.e.isSr = false;
+    this.e.game = "zzz";
+    this.e.msg = "#绝区零绑定" + this.e.msg;
+    this.bingUid();
+    this.finish("saveZzzUid");
   }
 
   /** 未登录ck */

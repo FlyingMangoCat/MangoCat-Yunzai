@@ -104,7 +104,7 @@ export default class Player extends Base {
 
   static create (e, game = 'gs') {
     if (e?._mys?.uid || e.uid) {
-      let targetGame = e.isSr ? 'sr' : game
+      let targetGame = e?.game || (e.isSr ? 'sr' : game)
       let player = new Player(e?._mys?.uid || e.uid, targetGame)
       player.e = e
       return player

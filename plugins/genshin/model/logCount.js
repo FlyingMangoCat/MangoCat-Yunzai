@@ -36,7 +36,8 @@ export default class LogCount extends base {
       "狼的末路",
       "风鹰剑",
     ];
-    if (e.isSr) {
+    const game = e?.game || (e.isSr ? "sr" : "gs");
+    if (game === "sr") {
       /** 绑定的uid */
       this.uidKey = `Yz:srJson:mys:qq-uid:${this.userId}`;
 

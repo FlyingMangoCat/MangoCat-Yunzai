@@ -20,9 +20,10 @@ export default class Note extends base {
     let resUser;
     if (!res || res.retcode !== 0) return false;
     /** 截图数据 */
-    let data = this.e.isSr ? this.noteSr(res) : this.noteData(res);
+    const game = this.e?.game || (this.e.isSr ? "sr" : "gs");
+    let data = game === "sr" ? this.noteSr(res) : this.noteData(res);
     let screenData = this.screenData;
-    if (this.e.isSr) {
+    if (game === "sr") {
       screenData.tplFile =
         "./plugins/genshin/resources/StarRail/html/dailyNote/dailyNote.html";
       resUser = await MysInfo.get(this.e, "UserGame");

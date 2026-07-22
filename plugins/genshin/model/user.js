@@ -16,7 +16,9 @@ export default class User extends base {
 
     /** 多角色uid */
     this.allUid = [];
-    if (/星铁|崩坏星穹铁道|铁道|星穹|星轨|\/common\//.test(e?.msg)) {
+    if (e?.game === "zzz") {
+      this.uidKey = `Yz:zzzJson:mys:qq-uid:${this.userId}`;
+    } else if (e?.game === "sr" || /星铁|崩坏星穹铁道|铁道|星穹|星轨|\/common\//.test(e?.msg)) {
       this.e.isSr = true;
       /** 绑定的uid */
       this.uidKey = `Yz:srJson:mys:qq-uid:${this.userId}`;
