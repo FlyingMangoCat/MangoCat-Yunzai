@@ -16,6 +16,13 @@ const liulianImgMap = {
   gacha: 'genshin/gacha/character',
   splash: 'genshin/gacha/character',
 }
+
+const liulianSrMap = {
+  face: '星铁/role',
+  qFace: '星铁/role',
+  side: '星铁/side',
+  splash: '星铁/role',
+}
 const CharImg = {
 
   // 获取角色的插画
@@ -150,8 +157,18 @@ const CharImg = {
     let add = (key, path, path2) => {
       if (path2 && fs.existsSync(`${rPath}/${nPath}/${path2}.${fileType}`)) {
         imgs[key] = `${nPath}${path2}.${fileType}`
-      } else {
+      } else if (fs.existsSync(`${rPath}/${nPath}/${path}.${fileType}`)) {
         imgs[key] = `${nPath}${path}.${fileType}`
+      }
+      // 尝试从 liulian-plugin 资源目录获取
+      if (!imgs[key] && liulianSrMap[key]) {
+        const liuDir = `${liulianRoot}/${liulianSrMap[key]}`
+        for (const ext of ['.png', '.webp', '.jpg']) {
+          if (fs.existsSync(`${liuDir}/${name}${ext}`)) {
+            imgs[key] = `../../liulian-plugin/resources/${liulianSrMap[key]}/${name}${ext}`
+            break
+          }
+        }
       }
     }
     add('face', 'imgs/face')
