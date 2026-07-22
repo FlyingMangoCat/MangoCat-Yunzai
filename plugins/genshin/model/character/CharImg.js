@@ -12,7 +12,6 @@ const liulianRoot = `${process.cwd()}/plugins/liulian-plugin/resources`
 const liulianImgMap = {
   face: 'genshin/logo/role',
   qFace: 'genshin/logo/role',
-  side: 'genshin/gacha/character',
   gacha: 'genshin/gacha/character',
   splash: 'genshin/gacha/character',
 }
@@ -20,7 +19,6 @@ const liulianImgMap = {
 const liulianSrMap = {
   face: '星铁/role',
   qFace: '星铁/role',
-  side: '星铁/side',
   splash: '星铁/role',
 }
 const CharImg = {
