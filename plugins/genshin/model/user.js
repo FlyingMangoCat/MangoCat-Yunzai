@@ -298,6 +298,9 @@ export default class User extends base {
           if (ds.key === "zzz") {
             uidDs.zzz_face = !uidDs.face
             uidDs.zzz_banner = !uidDs.banner
+            // 无面板数据时显示 UID 代替"暂无uid信息"
+            if (!uidDs.name) uidDs.name = uidDs.uid
+            if (!uidDs.level) uidDs.level = "?"
           }
       })
     })

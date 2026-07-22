@@ -58,9 +58,12 @@ export default class Player extends Base {
       }
     }
     let imgs = char?.imgs || {}
-    // 绝区零没有角色元数据，返回空让 showUid 使用默认占位图
+    // 绝区零：无角色元数据时使用独立资源路径
     if (this.game === 'zzz') {
-      return { face: '', banner: '' }
+      return {
+        face: imgs.face || '/common/item/face.webp',
+        banner: imgs.banner || '/ZZZero/img/other/banner.png'
+      }
     }
     return {
       face: imgs.face || '/common/item/face.webp',
