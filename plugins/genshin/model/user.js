@@ -305,7 +305,7 @@ export default class User extends base {
             if (mysUser?.ck) {
               let roleRes = await MysUser.getGameRole(mysUser.ck, "mys").catch(() => false)
               if (roleRes?.retcode === 0 && roleRes.data?.list) {
-                let zzzRole = roleRes.data.list.find(r => /^nap_/.test(r.game_biz) && r.game_uid == uidDs.uid) || roleRes.data.list.find(r => /^nap_/.test(r.game_biz))
+                let zzzRole = roleRes.data.list.find(r => r.game_uid == uidDs.uid)
                 if (zzzRole) {
                   uidDs.name = zzzRole.nickname || uidDs.uid
                   uidDs.level = zzzRole.level || "?"
