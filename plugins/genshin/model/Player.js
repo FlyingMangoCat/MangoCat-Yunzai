@@ -52,18 +52,19 @@ export default class Player extends Base {
     let avatarName = ''
     let avatarId = ''
     if (this.face) avatarId = this.face
-    if (!avatarId) {
+    // 用角色ID查对应角色表拿官方名称
+    let roleMap = this.game === 'zzz' ? zzzroleId : this.game === 'sr' ? starroleId : roleId
+    let roleNames = roleMap[avatarId]
+    // this.face 可能是角色名（非数字ID）导致匹配失败，回退到 _avatars 取角色ID
+    if (!roleNames) {
       if (lodash.isArray(this._avatars)) {
-        // _avatars 是数组时取第一个元素的 id
         if (this._avatars.length > 0) avatarId = this._avatars[0].id || this._avatars[0].avatarId || ''
       } else {
         let keys = lodash.keys(this._avatars)
         if (keys.length > 0) avatarId = keys[0]
       }
+      roleNames = roleMap[avatarId]
     }
-    // 用角色ID查对应角色表拿官方名称
-    let roleMap = this.game === 'zzz' ? zzzroleId : this.game === 'sr' ? starroleId : roleId
-    let roleNames = roleMap[avatarId]
     if (roleNames && roleNames.length > 0) avatarName = roleNames[0]
     if (this.game === 'zzz') {
       return {
