@@ -282,28 +282,42 @@ export default class User extends base {
       { key: "sr", name: "星穹铁道" },
       { key: "zzz", name: "绝区零" },
     ]
-    lodash.forEach(uids, ds => {
+    for (let ds of uids) {
       ds.uidList = user.getUidList(ds.key)
       ds.uid = user.getUid(ds.key)
-      lodash.forEach(ds.uidList, uidDs => {
-          let player = Player.create(uidDs.uid, ds.key)
-          if (player) {
-            uidDs.name = player.name
-            uidDs.level = player.level
-            let imgs = player?.faceImgs || {}
-            uidDs.face = imgs.face
-            uidDs.banner = imgs.banner
+      for (let uidDs of ds.uidList) {
+        let player = Player.create(uidDs.uid, ds.key)
+        if (player) {
+          uidDs.name = player.name
+          uidDs.level = player.level
+          let imgs = player?.faceImgs || {}
+          uidDs.face = imgs.face
+          uidDs.banner = imgs.banner
+        }
+        // 绝区零：没有角色头像数据时使用默认占位图
+        if (ds.key === "zzz") {
+          uidDs.zzz_face = !uidDs.face
+          uidDs.zzz_banner = !uidDs.banner
+          // 无面板数据时尝试从 API 获取
+          if (!uidDs.name) {
+            let oldUid = this.e.uid
+            let oldGame = this.e.game
+            this.e.uid = uidDs.uid
+            this.e.game = "zzz"
+            let res = await MysInfo.get(this.e, "index").catch(() => false)
+            this.e.uid = oldUid
+            this.e.game = oldGame
+            if (res && res.retcode === 0 && res.data?.role) {
+              uidDs.name = res.data.role.nickname || res.data.role.name || uidDs.uid
+              uidDs.level = res.data.role.level || "?"
+            } else {
+              uidDs.name = uidDs.uid
+              uidDs.level = "?"
+            }
           }
-          // 绝区零：没有角色头像数据时使用默认占位图
-          if (ds.key === "zzz") {
-            uidDs.zzz_face = !uidDs.face
-            uidDs.zzz_banner = !uidDs.banner
-            // 无面板数据时显示 UID 代替"暂无uid信息"
-            if (!uidDs.name) uidDs.name = uidDs.uid
-            if (!uidDs.level) uidDs.level = "?"
-          }
-      })
-    })
+        }
+      }
+    }
     return this.e.reply([
       await this.e.runtime.render("genshin", "html/user/uid-list", { uids }, { retType: "base64" }),
       segment.button(
