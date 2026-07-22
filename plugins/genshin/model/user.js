@@ -286,7 +286,6 @@ export default class User extends base {
       ds.uidList = user.getUidList(ds.key)
       ds.uid = user.getUid(ds.key)
       lodash.forEach(ds.uidList, uidDs => {
-        if (ds.key !== "zzz") {
           let player = Player.create(uidDs.uid, ds.key)
           if (player) {
             uidDs.name = player.name
@@ -295,10 +294,10 @@ export default class User extends base {
             uidDs.face = imgs.face
             uidDs.banner = imgs.banner
           }
-        } else {
-          uidDs.zzz_face = true
-          uidDs.zzz_banner = true
-        }
+          if (ds.key === "zzz") {
+            uidDs.zzz_face = true
+            uidDs.zzz_banner = true
+          }
       })
     })
     return this.e.reply([
