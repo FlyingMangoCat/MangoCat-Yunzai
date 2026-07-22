@@ -26,13 +26,13 @@ export default class apiTool {
   getUrlMap = (data = {}) => {
     let host, hostRecord, hostPublicData;
     if (
-      ["cn_gf01", "cn_qd01", "prod_gf_cn", "prod_qd_cn"].includes(this.server)
+      ["cn_gf01", "cn_qd01", "prod_gf_cn", "prod_qd_cn", "nap_cn"].includes(this.server)
     ) {
       host = "https://api-takumi.mihoyo.com/";
       hostRecord = "https://api-takumi-record.mihoyo.com/";
       hostPublicData = "https://public-data-api.mihoyo.com/"
     } else if (
-      ["os_usa", "os_euro", "os_asia", "os_cht"].includes(this.server)
+      ["os_usa", "os_euro", "os_asia", "os_cht", "nap_global"].includes(this.server)
     ) {
       host = "https://api-os-takumi.mihoyo.com/";
       hostRecord = "https://bbs-api-os.mihoyo.com/";
@@ -237,6 +237,54 @@ export default class apiTool {
             uid: this.uid,
           },
           sign: true,
+        },
+      },
+      zzz: {
+        /** 体力接口fp参数用于避开验证码 */
+        ...(["nap_cn"].includes(this.server)
+          ? {
+              getFp: {
+                url: `${hostPublicData}device-fp/api/getFp`,
+                body: {
+                  seed_id: data.seed_id,
+                  device_id: data.deviceId.toUpperCase(),
+                  platform: "1",
+                  seed_time: new Date().getTime() + "",
+                  ext_fields: `{"proxyStatus":"0","accelerometer":"-0.159515x-0.830887x-0.682495","ramCapacity":"3746","IDFV":"${data.deviceId.toUpperCase()}","gyroscope":"-0.191951x-0.112927x0.632637","isJailBreak":"0","model":"iPhone12,5","ramRemain":"115","chargeStatus":"1","networkType":"WIFI","vendor":"--","osVersion":"17.0.2","batteryStatus":"50","screenSize":"414×896","cpuCores":"6","appMemory":"55","romCapacity":"488153","romRemain":"157348","cpuType":"CPU_TYPE_ARM64","magnetometer":"-84.426331x-89.708435x-37.117889"}`,
+                  app_name: "bbs_cn",
+                  device_fp: "38d7ee834d1e9",
+                },
+              },
+            }
+          : {
+              getFp: {
+                url: `${hostPublicData}device-fp/api/getFp`,
+                body: {
+                  seed_id: `${this.uuid}`,
+                  device_id: "35315696b7071100",
+                  hoyolab_device_id: `${this.uuid}`,
+                  platform: "2",
+                  seed_time: new Date().getTime() + "",
+                  ext_fields: `{"proxyStatus":1,"isRoot":1,"romCapacity":"512","deviceName":"Xperia 1","productName":"J9110","romRemain":"483","hostname":"BuildHost","screenSize":"1096x2434","isTablet":0,"model":"J9110","brand":"Sony","hardware":"qcom","deviceType":"J9110","devId":"REL","serialNumber":"unknown","sdCapacity":107433,"buildTime":"1633631032000","buildUser":"BuildUser","simState":1,"ramRemain":"98076","appUpdateTimeDiff":1716545162858,"deviceInfo":"Sony\/J9110\/J9110:11\/55.2.A.4.332\/055002A004033203408384484:user\/release-keys","buildType":"user","sdkVersion":"30","ui_mode":"UI_MODE_TYPE_NORMAL","isMockLocation":0,"cpuType":"arm64-v8a","isAirMode":0,"ringMode":2,"app_set_id":"${this.uuid}","chargeStatus":1,"manufacturer":"Sony","emulatorStatus":0,"appMemory":"512","adid":"${this.uuid}","osVersion":"11","vendor":"unknown","accelerometer":"-0.9233304x7.574181x6.472585","sdRemain":97931,"buildTags":"release-keys","packageName":"com.mihoyo.hoyolab","networkType":"WiFi","debugStatus":1,"ramCapacity":"107433","magnetometer":"-9.075001x-27.300001x-3.3000002","display":"55.2.A.4.332","appInstallTimeDiff":1716489549794,"packageVersion":"","gyroscope":"0.027029991x-0.04459185x0.032222193","batteryStatus":45,"hasKeyboard":0,"board":"msmnile"}`,
+                  app_name: "bbs_oversea",
+                  device_fp: "38d7f2352506c",
+                },
+              },
+            }),
+        /** 首页信息 */
+        index: {
+          url: `${hostRecord}game_record/app/nap/api/index`,
+          query: `role_id=${this.uid}&server=${this.server}`,
+        },
+        /** 角色详情 */
+        character: {
+          url: `${hostRecord}game_record/app/nap/api/avatar/info`,
+          body: { role_id: this.uid, server: this.server },
+        },
+        /** 电量 */
+        dailyNote: {
+          url: `${hostRecord}game_record/app/nap/api/note`,
+          query: `role_id=${this.uid}&server=${this.server}`,
         },
       },
     };

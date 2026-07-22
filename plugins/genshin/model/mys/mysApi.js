@@ -14,9 +14,11 @@ export default class MysApi {
   constructor(uid, cookie, option = {}, isSr = false) {
     this.uid = uid;
     this.cookie = cookie;
+    // 从 option.game 读取游戏类型，兼容 isSr 参数
+    let game = option.game || (isSr ? "sr" : "gs")
     this.isSr = isSr;
-    this.server = this.getServer();
-    this.apiTool = new apiTool(uid, this.server, isSr);
+    this.server = this.getServer(game);
+    this.apiTool = new apiTool(uid, this.server, game === "zzz" ? "zzz" : isSr);
     /** 5分钟缓存 */
     this.cacheCd = 300;
 
@@ -40,8 +42,25 @@ export default class MysApi {
     return { url, headers, body };
   }
 
-  getServer() {
+  getServer(game) {
     let uid = this.uid;
+    // 绝区零专用服务器
+    if (game === "zzz") {
+      switch (String(uid)[0]) {
+        case "1":
+        case "2":
+          return "nap_cn"; // 官服
+        case "6":
+          return "nap_global"; // 美服
+        case "7":
+          return "nap_global"; // 欧服
+        case "8":
+          return "nap_global"; // 亚服
+        case "9":
+          return "nap_global"; // 港澳台服
+      }
+      return "nap_cn";
+    }
     switch (String(uid)[0]) {
       case "1":
       case "2":
