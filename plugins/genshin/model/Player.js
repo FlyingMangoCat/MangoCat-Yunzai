@@ -22,6 +22,8 @@ export default class Player extends Base {
     }
     let cacheObj = this._getCache(`player:${game}:${uid}`)
     if (cacheObj) {
+      // 每次获取都重新加载数据，确保面板更新后数据同步
+      cacheObj.reload()
       return cacheObj
     }
     this.uid = uid
@@ -58,21 +60,10 @@ export default class Player extends Base {
       }
     }
     let imgs = char?.imgs || {}
-    // 绝区零：从面板数据读取角色名，匹配 liulian-plugin 资源
+    // 绝区零：banner 使用独立资源路径
     if (this.game === 'zzz') {
-      let avatarName = ''
-      // 优先从 face 字段获取角色名
-      if (this.face) avatarName = this.face
-      // 否则从 _avatars 中取第一个角色
-      if (!avatarName) {
-        let keys = lodash.keys(this._avatars)
-        if (keys.length > 0) {
-          let first = this._avatars[keys[0]]
-          avatarName = first.name || ''
-        }
-      }
       return {
-        face: avatarName ? `../../liulian-plugin/resources/zzz/gacha/${avatarName}.png` : '/common/item/face.webp',
+        face: imgs.face || '/common/item/face.webp',
         banner: '/ZZZero/img/other/banner.png'
       }
     }
