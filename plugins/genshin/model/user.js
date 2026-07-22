@@ -296,8 +296,8 @@ export default class User extends base {
         }
         // 绝区零：没有角色头像数据时使用默认占位图
         if (ds.key === "zzz") {
-          uidDs.zzz_face = !uidDs.face
-          uidDs.zzz_banner = !uidDs.banner
+          uidDs.zzz_face = true
+          uidDs.zzz_banner = true
           // 无面板数据时尝试从 API 获取
           if (!uidDs.name) {
             let oldUid = this.e.uid
