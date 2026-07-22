@@ -65,7 +65,20 @@ export default class Player extends Base {
       }
       roleNames = roleMap[avatarId]
     }
-    if (roleNames && roleNames.length > 0) avatarName = roleNames[0]
+    if (roleNames && roleNames.length > 0) {
+      avatarName = roleNames[0]
+    } else {
+      // roleMap 匹配失败时直接从 _avatars 取角色名
+      if (lodash.isArray(this._avatars) && this._avatars.length > 0) {
+        avatarName = this._avatars[0].name || ''
+      } else {
+        let keys = lodash.keys(this._avatars)
+        if (keys.length > 0) {
+          let first = this._avatars[keys[0]]
+          avatarName = first.name || first.avatarName || ''
+        }
+      }
+    }
     if (this.game === 'zzz') {
       return {
         face: avatarName ? `../../liulian-plugin/resources/zzz/gacha/${avatarName}.png` : '/common/item/face.webp',
