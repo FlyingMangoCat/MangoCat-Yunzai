@@ -96,7 +96,7 @@ const CharImg = {
     let add = (key, path, path2) => {
       if (path2 && fs.existsSync(`${rPath}/${nPath}/${path2}.${fileType}`)) {
         imgs[key] = `${nPath}${path2}.${fileType}`
-      } else {
+      } else if (fs.existsSync(`${rPath}/${nPath}/${path}.${fileType}`)) {
         imgs[key] = `${nPath}${path}.${fileType}`
       }
     }
