@@ -300,16 +300,23 @@ export default class User extends base {
           uidDs.zzz_banner = !uidDs.banner
           // 无面板数据时尝试从 API 获取
           if (!uidDs.name) {
-            let oldUid = this.e.uid
-            let oldGame = this.e.game
-            this.e.uid = uidDs.uid
-            this.e.game = "zzz"
-            let res = await MysInfo.get(this.e, "index").catch(() => false)
-            this.e.uid = oldUid
-            this.e.game = oldGame
-            if (res && res.retcode === 0 && res.data?.role) {
-              uidDs.name = res.data.role.nickname || res.data.role.name || uidDs.uid
-              uidDs.level = res.data.role.level || "?"
+            // 尝试用绑定 API 获取玩家信息（game_record 的 index 端点可能不存在）
+            let mysUser = user.getMysUser("zzz")
+            if (mysUser?.ck) {
+              let roleRes = await MysUser.getGameRole(mysUser.ck, "mys").catch(() => false)
+              if (roleRes?.retcode === 0 && roleRes.data?.list) {
+                let zzzRole = roleRes.data.list.find(r => /^nap_/.test(r.game_biz))
+                if (zzzRole) {
+                  uidDs.name = zzzRole.nickname || uidDs.uid
+                  uidDs.level = zzzRole.level || "?"
+                } else {
+                  uidDs.name = uidDs.uid
+                  uidDs.level = "?"
+                }
+              } else {
+                uidDs.name = uidDs.uid
+                uidDs.level = "?"
+              }
             } else {
               uidDs.name = uidDs.uid
               uidDs.level = "?"
