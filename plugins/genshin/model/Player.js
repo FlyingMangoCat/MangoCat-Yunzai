@@ -67,8 +67,20 @@ export default class Player extends Base {
         banner: '/ZZZero/img/other/banner.png'
       }
     }
+    let cwd = process.cwd().replace(/\\/g, '/')
+    if (this.game === 'sr') {
+      let srPath = `${cwd}/plugins/liulian-plugin/resources/星铁/role/${avatarName}.webp`
+      if (!avatarName || !fs.existsSync(srPath)) {
+        let pngPath = `${cwd}/plugins/liulian-plugin/resources/星铁/role/${avatarName}.png`
+        srPath = fs.existsSync(pngPath) ? pngPath : ''
+      }
+      return {
+        face: srPath || '/common/item/face.webp',
+        banner: `/meta-${this.game}/character/common/imgs/banner.webp`
+      }
+    }
     return {
-      face: avatarName ? `/meta-${this.game}/character/${avatarName}/imgs/face.webp` : '/common/item/face.webp',
+      face: avatarName ? `${cwd}/plugins/liulian-plugin/resources/genshin/logo/role/${avatarName}.png` : '/common/item/face.webp',
       banner: `/meta-${this.game}/character/common/imgs/banner.webp`
     }
   }
