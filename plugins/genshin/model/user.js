@@ -222,47 +222,6 @@ export default class User extends base {
     return await MysUser.getUserFullInfo(this.ck, server);
   }
 
-  /** 保存ck */
-  getCk() {
-    let ck = gsCfg.getBingCkSingle(this.e.user_id);
-
-    lodash.map(ck, (o) => {
-      o.isMain = false;
-      return o;
-    });
-
-    if (this.uid && this.ck) {
-      ck[this.uid] = {
-        uid: this.uid,
-        qq: this.e.user_id,
-        ck: this.ck,
-        ltuid: this.ltuid,
-        login_ticket: this.login_ticket,
-        region: this.region,
-        region_name: this.region_name,
-        device_id: this.getGuid(),
-        isMain: true,
-      };
-    }
-
-    if (this.ck) {
-      this.allUid.forEach((v) => {
-        if (!v.uid) return;
-        ck[v.uid] = {
-          uid: v.uid,
-          qq: this.e.user_id,
-          ck: this.ck,
-          ltuid: this.ltuid,
-          region_name: v.region_name,
-          region: v.region,
-          device_id: this.getGuid(),
-          isMain: false,
-        };
-      });
-    }
-    return ck;
-  }
-
   /** 删除绑定ck */
   async delCk(uid = "") {
     let user = await this.user();
