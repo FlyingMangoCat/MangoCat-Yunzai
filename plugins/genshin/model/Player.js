@@ -9,7 +9,6 @@ import lodash from 'lodash'
 import fs from 'node:fs'
 import path from 'node:path'
 import Base from './MiaoBase.js'
-import Character from './Character.js'
 import { zzzroleId } from '../../liulian-plugin/config/roleId.js'
 
 const playerDataDir = path.join(process.cwd(), 'data', 'PlayerData')
@@ -50,17 +49,6 @@ export default class Player extends Base {
 
   // 玩家头像
   get faceImgs () {
-    let char
-    if (this.isGs && this.face) {
-      char = Character.get(this.face)
-    }
-    if (!char) {
-      let charId = lodash.keys(this._avatars)[0]
-      if (charId) {
-        char = Character.get(charId)
-      }
-    }
-    let imgs = char?.imgs || {}
     // 绝区零：从面板数据读取角色ID，匹配 liulian-plugin 资源
     if (this.game === 'zzz') {
       let avatarName = ''
@@ -80,8 +68,8 @@ export default class Player extends Base {
       }
     }
     return {
-      face: imgs.face || '/common/item/face.webp',
-      banner: imgs.banner || `/meta-${this.game}/character/common/imgs/banner.webp`
+      face: '/common/item/face.webp',
+      banner: `/meta-${this.game}/character/common/imgs/banner.webp`
     }
   }
 
