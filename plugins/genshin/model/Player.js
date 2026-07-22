@@ -9,7 +9,7 @@ import lodash from 'lodash'
 import fs from 'node:fs'
 import path from 'node:path'
 import Base from './MiaoBase.js'
-import Character from './Character.js'
+import { Character } from '#liulian.models'
 
 const playerDataDir = path.join(process.cwd(), 'data', 'PlayerData')
 
