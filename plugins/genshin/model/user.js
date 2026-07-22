@@ -113,6 +113,34 @@ export default class User extends base {
       await user.save()
     }
 
+    // 同步保存到 YAML 文件，供 StarRail/ZZZ 插件读取
+    let yamlCk = {}
+    if (this.uid && this.ck) {
+      yamlCk[this.ltuid || this.uid] = {
+        ck: this.ck,
+        uid: this.uid,
+        qq: this.e.user_id,
+        ltuid: this.ltuid,
+        login_ticket: this.login_ticket || "",
+        region: this.region || "",
+        region_name: this.region_name || "",
+        device_id: this.getGuid(),
+      }
+    }
+    this.allUid.forEach((v) => {
+      if (!v.uid) return
+      yamlCk[v.uid] = {
+        ck: this.ck,
+        uid: v.uid,
+        qq: this.e.user_id,
+        ltuid: this.ltuid,
+        region_name: v.region_name || "",
+        region: v.region || "",
+        device_id: this.getGuid(),
+      }
+    })
+    gsCfg.saveBingCk(this.e.user_id, yamlCk)
+
     logger.mark(
       `${this.e.logFnc} 保存cookie成功 [uid:${this.uid}] [ltuid:${this.ltuid}]`,
     );
@@ -220,6 +248,16 @@ export default class User extends base {
   // 获取米游社通行证id
   async getUserInfo(server = "mys") {
     return await MysUser.getUserFullInfo(this.ck, server);
+  }
+
+  /** 获取当前用户绑定的所有 CK（供 StarRail/ZZZ 插件读取） */
+  getCk() {
+    let ck = gsCfg.getBingCkSingle(this.e.user_id);
+    lodash.map(ck, (o) => {
+      o.isMain = false;
+      return o;
+    });
+    return ck;
   }
 
   /** 删除绑定ck */
