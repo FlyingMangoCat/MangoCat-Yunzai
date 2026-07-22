@@ -19,6 +19,7 @@ const liulianImgMap = {
 const liulianSrMap = {
   face: '星铁/role',
   qFace: '星铁/role',
+  splash: '星铁/side',
 }
 const CharImg = {
 
