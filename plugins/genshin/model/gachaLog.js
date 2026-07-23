@@ -1104,6 +1104,7 @@ export default class GachaLog extends base {
     let mysApi = new MysApi(String(this.uid), ck, { log: true }, this.e.isSr)
     let res = await mysApi.getData("genAuthKey", { game_uid: this.uid, region: region })
     if (!res || !res.authkey) {
+      logger.error(`[获取authkey失败] 响应: ${JSON.stringify(res)}`)
       this.e.reply("获取authkey失败，可能是cookie权限不足，请尝试重新绑定cookie")
       return false
     }
