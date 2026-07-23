@@ -1100,15 +1100,17 @@ export default class GachaLog extends base {
     this.e.reply(`正在获取抽卡authkey...`)
 
     /** 调用 authkey API（使用 MysApi，自动处理 DS 和 headers） */
+    logger.mark(`[获取authkey] UID:${this.uid} region:${region} gameBiz:${gameBiz}`)
     let MysApi = (await import("./mys/mysApi.js")).default
     let mysApi = new MysApi(String(this.uid), ck, { log: true }, this.e.isSr)
     let res = await mysApi.getData("genAuthKey", { game_uid: this.uid, region: region })
-    if (!res || !res.authkey) {
-      logger.error(`[获取authkey失败] 响应: ${JSON.stringify(res)}`)
-      this.e.reply("获取authkey失败，可能是cookie权限不足，请尝试重新绑定cookie")
+    logger.mark(`[获取authkey] 响应: ${JSON.stringify(res)}`)
+    if (!res || res.retcode !== 0 || !res.data?.authkey) {
+      logger.error(`[获取authkey失败] retcode:${res?.retcode} msg:${res?.message}`)
+      this.e.reply(`获取authkey失败(retcode:${res?.retcode})，请重新绑定cookie后重试`)
       return false
     }
-    let authkey = res.authkey
+    let authkey = res.data.authkey
 
     /** 保存 authkey 到 Redis（有效期24小时） */
     await redis.setEx(`${this.urlKey}${this.uid}`, 86400, authkey)

@@ -145,6 +145,7 @@ export default class MysApi {
 
     if (res.retcode !== 0 && this.option.log) {
       logger.debug(`[米游社接口][请求参数] ${url} ${JSON.stringify(param)}`);
+      logger.error(`[米游社接口][${type}][${this.uid}] 响应错误 retcode:${res.retcode} msg:${res.message}`);
     }
 
     res.api = type;
