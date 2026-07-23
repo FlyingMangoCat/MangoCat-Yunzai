@@ -1116,25 +1116,30 @@ export default class GachaLog extends base {
   }
 
   /**
-   * 请求米哈游 authkey API
+   * 请求米哈游 authkey API（genAuthKey）
+   * 使用 LK2 salt + DS1 算法，需要 cookie 中包含 stoken 和 stuid
+   * @returns {Promise<string|boolean>} authkey 字符串，失败返回 false
    */
   async _requestAuthKey(ck, uid, gameBiz, region) {
-    let url = "https://api-takumi.mihoyo.com/common/auth/api/getAuthKey"
+    let url = "https://api-takumi.miyoushe.com/binding/api/genAuthKey"
     let body = JSON.stringify({
       auth_appid: "webview_gacha",
       game_biz: gameBiz,
-      uid: uid,
+      game_uid: Number(uid),
       region: region,
     })
 
+    /** genAuthKey 使用 LK2 salt + DS1 算法 */
+    let ds = this._getLK2Ds()
+
     let headers = {
       "Cookie": ck,
-      "Content-Type": "application/json",
+      "Content-Type": "application/json;charset=utf-8",
       "x-rpc-app_version": "2.40.1",
       "x-rpc-client_type": "5",
       "User-Agent": `Mozilla/5.0 (Linux; Android 12; Yz-${md5(uid).substring(0, 5)}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.73 Mobile Safari/537.36 miHoYoBBS/2.40.1`,
       "Referer": "https://webstatic.mihoyo.com/",
-      "DS": this._getDs("", body, region),
+      "DS": ds,
     }
 
     let res = await fetch(url, { method: "POST", headers, body }).catch(err => {
@@ -1156,16 +1161,19 @@ export default class GachaLog extends base {
   }
 
   /**
-   * 生成米哈游 API 的 DS 签名
+   * 生成 LK2 salt 的 DS1 签名
+   * genAuthKey 等米游社内部 API 使用此算法
+   * DS1: salt={LK2_salt}&t={t}&r={r}  (6位随机字符，不含 body/query)
    */
-  _getDs(q = "", b = "", region = "") {
-    let n = "xV8v4Qu54lUKrEYFZkJhB8cuOh9Asafs"
-    if (/os_|official/.test(region)) {
-      n = "okr4obncj8bw5a65hbnn5oo6ixjc3l9w"
-    }
+  _getLK2Ds() {
+    let n = "jEpJb9rRARU2rXDA9qYbZ3selxkuct9a"
     let t = Math.round(new Date().getTime() / 1000)
-    let r = Math.floor(Math.random() * 900000 + 100000)
-    let DS = md5(`salt=${n}&t=${t}&r=${r}&b=${b}&q=${q}`)
+    let r = ""
+    let chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    for (let i = 0; i < 6; i++) {
+      r += chars[Math.floor(Math.random() * chars.length)]
+    }
+    let DS = md5(`salt=${n}&t=${t}&r=${r}`)
     return `${t},${r},${DS}`
   }
 }
