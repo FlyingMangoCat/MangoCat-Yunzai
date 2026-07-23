@@ -63,6 +63,9 @@ export default class User extends base {
     }
 
     this.ck = `ltoken=${param.ltoken};ltuid=${param.ltuid || param.login_uid};cookie_token=${param.cookie_token || param.cookie_token_v2}; account_id=${param.ltuid || param.login_uid};`;
+    if (param.login_ticket) {
+      this.ck += ` login_ticket=${param.login_ticket};`;
+    }
     if (param.stoken) {
       this.ck += ` stoken=${param.stoken};stuid=${param.stuid || param.ltuid || param.login_uid};`;
     }
@@ -72,6 +75,9 @@ export default class User extends base {
       // account_mid_v2 为版本必须带的字段，不带的话会一直提示绑定cookie失败 请重新登录
       flagV2 = true;
       this.ck = `account_mid_v2=${param.account_mid_v2};cookie_token_v2=${param.cookie_token_v2};ltoken_v2=${param.ltoken_v2};ltmid_v2=${param.ltmid_v2};`;
+      if (param.login_ticket) {
+        this.ck += `login_ticket=${param.login_ticket};`;
+      }
       if (param.stoken_v2) {
         this.ck += `stoken_v2=${param.stoken_v2};mid=${param.ltmid_v2};`;
       } else if (param.stoken) {

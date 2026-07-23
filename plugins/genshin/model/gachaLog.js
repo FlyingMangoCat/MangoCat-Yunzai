@@ -1099,9 +1099,30 @@ export default class GachaLog extends base {
 
     this.e.reply(`正在获取抽卡authkey...`)
 
-    /** 检查cookie中是否包含stoken */
+    /** 从cookie中提取login_ticket，用于换取stoken */
+    let param = {}
+    ck.split(";").forEach(v => {
+      let tmp = lodash.trim(v).replace("=", "~").split("~")
+      param[tmp[0]] = tmp[1]
+    })
+    let loginTicket = param.login_ticket || ""
+
+    /** 检查cookie中是否包含stoken，如果没有则用login_ticket换取 */
     let hasStoken = /stoken_v2|stoken=/.test(ck)
-    logger.mark(`[获取authkey] UID:${this.uid} region:${region} gameBiz:${gameBiz} hasStoken:${hasStoken}`)
+    logger.mark(`[获取authkey] UID:${this.uid} region:${region} gameBiz:${gameBiz} hasStoken:${hasStoken} hasLoginTicket:${!!loginTicket}`)
+
+    if (!hasStoken && loginTicket) {
+      logger.mark(`[获取authkey] 使用login_ticket换取stoken...`)
+      let stokenRes = await this._getStokenByLoginTicket(loginTicket, ck)
+      if (stokenRes) {
+        /** 将stoken拼接到cookie中 */
+        ck += ` ${stokenRes.stoken};${stokenRes.stuid};`
+        logger.mark(`[获取authkey] stoken获取成功`)
+      } else {
+        logger.error(`[获取authkey] 换取stoken失败`)
+      }
+    }
+
     let MysApi = (await import("./mys/mysApi.js")).default
     let mysApi = new MysApi(String(this.uid), ck, { log: true }, this.e.isSr)
     let res = await mysApi.getData("genAuthKey", { game_uid: this.uid, region: region })
@@ -1119,5 +1140,50 @@ export default class GachaLog extends base {
 
     this.e.reply(`authkey获取成功，UID:${this.uid}，开始更新抽卡记录...`)
     return true
+  }
+
+  /**
+   * 通过 login_ticket 换取 stoken（getMultiTokenByLoginTicket）
+   * @param {string} loginTicket
+   * @param {string} ck 完整cookie，用于提取ltuid
+   * @returns {Promise<{stoken:string, stuid:string}|null>}
+   */
+  async _getStokenByLoginTicket(loginTicket, ck) {
+    let param = {}
+    ck.split(";").forEach(v => {
+      let tmp = lodash.trim(v).replace("=", "~").split("~")
+      param[tmp[0]] = tmp[1]
+    })
+    let stuid = param.ltuid || param.ltmid_v2 || param.stuid || param.account_id
+    if (!stuid) {
+      logger.error(`[换取stoken] 无法从cookie中提取stuid`)
+      return null
+    }
+
+    let url = `https://api-takumi.mihoyo.com/auth/api/getMultiTokenByLoginTicket?login_ticket=${loginTicket}&token_types=3&uid=${stuid}`
+    let res = await fetch(url, {
+      headers: {
+        "Cookie": ck,
+        "User-Agent": "Mozilla/5.0 (Linux; Android 12) AppleWebKit/537.36",
+      }
+    }).catch(err => {
+      logger.error(`[换取stoken] 请求失败: ${err}`)
+      return null
+    })
+    if (!res || !res.ok) return null
+
+    let json = await res.json()
+    if (json.retcode !== 0 || !json?.data?.list) {
+      logger.error(`[换取stoken] API返回错误 retcode:${json.retcode} msg:${json.message}`)
+      return null
+    }
+
+    let stokenItem = json.data.list.find(item => item.name === "stoken")
+    if (!stokenItem || !stokenItem.token) {
+      logger.error(`[换取stoken] 响应中未找到stoken`)
+      return null
+    }
+
+    return { stoken: `stoken=${stokenItem.token}`, stuid: `stuid=${stuid}` }
   }
 }
