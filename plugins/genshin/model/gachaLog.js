@@ -6,7 +6,6 @@ import common from "../../../lib/common/common.js"
 import gsCfg from "./gsCfg.js"
 import { Character, Weapon } from "#liulian.models"
 import MysUser from "./mys/MysUser.js"
-import md5 from "md5"
 
 export default class GachaLog extends base {
   constructor(e) {
@@ -1100,12 +1099,15 @@ export default class GachaLog extends base {
 
     this.e.reply(`正在获取抽卡authkey...`)
 
-    /** 调用 authkey API */
-    let authkey = await this._requestAuthKey(ck, String(this.uid), gameBiz, region)
-    if (!authkey) {
+    /** 调用 authkey API（使用 MysApi，自动处理 DS 和 headers） */
+    let MysApi = (await import("./mys/mysApi.js")).default
+    let mysApi = new MysApi(String(this.uid), ck, { log: true }, this.e.isSr)
+    let res = await mysApi.getData("genAuthKey", { game_uid: this.uid, region: region })
+    if (!res || !res.authkey) {
       this.e.reply("获取authkey失败，可能是cookie权限不足，请尝试重新绑定cookie")
       return false
     }
+    let authkey = res.authkey
 
     /** 保存 authkey 到 Redis（有效期24小时） */
     await redis.setEx(`${this.urlKey}${this.uid}`, 86400, authkey)
@@ -1113,67 +1115,5 @@ export default class GachaLog extends base {
 
     this.e.reply(`authkey获取成功，UID:${this.uid}，开始更新抽卡记录...`)
     return true
-  }
-
-  /**
-   * 请求米哈游 authkey API（genAuthKey）
-   * 使用 LK2 salt + DS1 算法，需要 cookie 中包含 stoken 和 stuid
-   * @returns {Promise<string|boolean>} authkey 字符串，失败返回 false
-   */
-  async _requestAuthKey(ck, uid, gameBiz, region) {
-    let url = "https://api-takumi.mihoyo.com/binding/api/genAuthKey"
-    let body = JSON.stringify({
-      auth_appid: "webview_gacha",
-      game_biz: gameBiz,
-      game_uid: Number(uid),
-      region: region,
-    })
-
-    /** genAuthKey 使用 LK2 salt + DS1 算法 */
-    let ds = this._getLK2Ds()
-
-    let headers = {
-      "Cookie": ck,
-      "Content-Type": "application/json;charset=utf-8",
-      "x-rpc-app_version": "2.40.1",
-      "x-rpc-client_type": "5",
-      "User-Agent": `Mozilla/5.0 (Linux; Android 12; Yz-${md5(uid).substring(0, 5)}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.73 Mobile Safari/537.36 miHoYoBBS/2.40.1`,
-      "Referer": "https://webstatic.mihoyo.com/",
-      "DS": ds,
-    }
-
-    let res = await fetch(url, { method: "POST", headers, body }).catch(err => {
-      logger.error(`[获取authkey失败] ${err}`)
-    })
-
-    if (!res || !res.ok) {
-      logger.error(`[获取authkey失败] HTTP ${res?.status}`)
-      return false
-    }
-
-    let json = await res.json()
-    if (json.retcode !== 0 || !json?.data?.authkey) {
-      logger.error(`[获取authkey失败] retcode:${json.retcode} msg:${json.message}`)
-      return false
-    }
-
-    return json.data.authkey
-  }
-
-  /**
-   * 生成 LK2 salt 的 DS1 签名
-   * genAuthKey 等米游社内部 API 使用此算法
-   * DS1: salt={LK2_salt}&t={t}&r={r}  (6位随机字符，不含 body/query)
-   */
-  _getLK2Ds() {
-    let n = "jEpJb9rRARU2rXDA9qYbZ3selxkuct9a"
-    let t = Math.round(new Date().getTime() / 1000)
-    let r = ""
-    let chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-    for (let i = 0; i < 6; i++) {
-      r += chars[Math.floor(Math.random() * chars.length)]
-    }
-    let DS = md5(`salt=${n}&t=${t}&r=${r}`)
-    return `${t},${r},${DS}`
   }
 }

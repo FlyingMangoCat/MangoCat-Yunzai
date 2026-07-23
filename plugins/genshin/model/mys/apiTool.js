@@ -147,6 +147,17 @@ export default class apiTool {
           url: `${hostRecord}game_record/app/genshin/api/gcg/basicInfo`,
           query: `role_id=${this.uid}&server=${this.server}`,
         },
+        /** 获取抽卡authkey */
+        genAuthKey: {
+          url: `${host}binding/api/genAuthKey`,
+          body: {
+            auth_appid: "webview_gacha",
+            game_biz: "hk4e_cn",
+            game_uid: Number(data.game_uid),
+            region: data.region,
+          },
+          sign: true,
+        },
         /**使用兑换码 目前仅限国际服,来自于国服的uid请求已在myinfo.js的init方法提前拦截 */
         useCdk: {
           url: "PLACE_HOLDER",
@@ -235,6 +246,17 @@ export default class apiTool {
             act_id: "e202304121516551",
             region: this.server,
             uid: this.uid,
+          },
+          sign: true,
+        },
+        /** 获取抽卡authkey */
+        genAuthKey: {
+          url: `${host}binding/api/genAuthKey`,
+          body: {
+            auth_appid: "webview_gacha",
+            game_biz: "hkrpg_cn",
+            game_uid: Number(data.game_uid),
+            region: data.region,
           },
           sign: true,
         },
