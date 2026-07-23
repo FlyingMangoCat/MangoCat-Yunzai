@@ -1099,8 +1099,9 @@ export default class GachaLog extends base {
 
     this.e.reply(`正在获取抽卡authkey...`)
 
-    /** 调用 authkey API（使用 MysApi，自动处理 DS 和 headers） */
-    logger.mark(`[获取authkey] UID:${this.uid} region:${region} gameBiz:${gameBiz}`)
+    /** 检查cookie中是否包含stoken */
+    let hasStoken = /stoken_v2|stoken=/.test(ck)
+    logger.mark(`[获取authkey] UID:${this.uid} region:${region} gameBiz:${gameBiz} hasStoken:${hasStoken}`)
     let MysApi = (await import("./mys/mysApi.js")).default
     let mysApi = new MysApi(String(this.uid), ck, { log: true }, this.e.isSr)
     let res = await mysApi.getData("genAuthKey", { game_uid: this.uid, region: region })
