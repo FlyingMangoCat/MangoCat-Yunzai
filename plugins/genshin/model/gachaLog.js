@@ -13,7 +13,7 @@ export default class GachaLog extends base {
     super(e)
     this.model = "gachaLog"
 
-    if (!e.isSr && e.msg) e.isSr = /\/(common|hkrpg)\//.test(e.msg)
+    if (!e.isSr && e.msg) e.isSr = /\/(common|hkrpg)\//.test(e.msg) || e.game === "sr"
 
     this.urlKey = `${this.prefix}url:`
     /** 绑定的uid */
