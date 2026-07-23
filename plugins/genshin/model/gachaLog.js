@@ -1121,7 +1121,7 @@ export default class GachaLog extends base {
    * @returns {Promise<string|boolean>} authkey 字符串，失败返回 false
    */
   async _requestAuthKey(ck, uid, gameBiz, region) {
-    let url = "https://api-takumi.miyoushe.com/binding/api/genAuthKey"
+    let url = "https://api-takumi.mihoyo.com/binding/api/genAuthKey"
     let body = JSON.stringify({
       auth_appid: "webview_gacha",
       game_biz: gameBiz,
