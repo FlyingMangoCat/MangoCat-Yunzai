@@ -1,3 +1,12 @@
+ # 3.1.5
+
+ * 新增：`#星铁更新抽卡记录` 命令，通过已绑定的米游社 cookie 自动获取 authkey 更新星铁抽卡记录
+   * 从 cookie 提取 login_ticket 换取 stoken
+   * 通过 genAuthKey API 获取抽卡 authkey
+   * 无需手动从游戏复制抽卡链接
+ * 修复：GachaLog 构造函数未识别 `e.game === "sr"`，导致星铁命令用错 gameBiz/region
+ * 优化：绑定 cookie 时同时保存 stoken 和 login_ticket 字段
+
  # 3.1.4
 
  * 修复：启动时缺少 `MysInfo.initCache()` 调用，导致插件通过UID查找Cookie失败
