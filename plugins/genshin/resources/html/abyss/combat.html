@@ -55,7 +55,7 @@
       {{each round.avatars avatar}}
       <div class="round_avatar">
         <div class="bg{{avatar.rarity}}" style="height: 80px;">
-          <img src="{{pluResPath}}/meta-gs/character/{{avatar.name}}/imgs/face.webp">
+          <img src="{{liulianResPath}}genshin/logo/role/{{avatar.name}}.png" onerror="whenError(this,'role')">
           <span class="element" style="background-image:url('{{pluResPath}}img/element/{{avatar.element}}.png')"></span>
           {{if avatar.avatar_type>1 }}
           <span class="type t{{avatar.avatar_type}}">{{type[avatar.avatar_type]}}</span>

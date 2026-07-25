@@ -121,7 +121,7 @@ export default class Calculator extends base {
       this.dataCharacter = {
         level: 1,
         name: this.role.name,
-        icon: `${this.screenData.pluResPath}img/role/${this.role.name}.png`,
+        icon: `../../liulian-plugin/resources/genshin/logo/role/${this.role.name}.png`,
         rarity: four.includes(Number(this.role.roleId)) ? 4 : 5,
       };
     }

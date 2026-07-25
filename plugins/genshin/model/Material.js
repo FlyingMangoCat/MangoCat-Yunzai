@@ -5,8 +5,8 @@ import lodash from 'lodash'
 import Base from './BaseProxy.js'
 import { Data, Meta } from '../components/index.js'
 
-let data = Data.readJSON('resources/meta-gs/material/data.json', 'miao')
-let abbr = await Data.importDefault('resources/meta-gs/material/abbr.js', 'miao')
+let data = Data.readJSON('resources/meta-gs/material/data.json')
+let abbr = await Data.importDefault('resources/meta-gs/material/abbr.js')
 let mMap = {}
 let getItem = (ds) => {
   mMap[ds.name] = {
