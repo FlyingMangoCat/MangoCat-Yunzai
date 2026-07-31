@@ -13,7 +13,7 @@ const API_QUERY = "https://passport-api.mihoyo.com/account/ma-cn-passport/app/qu
 // 用 stoken 换 cookie_token 的接口
 const API_GET_COOKIE = "https://passport-api.mihoyo.com/account/auth/api/getCookieAccountInfoBySToken";
 
-// 公钥（用于加密 login_ticket 密码等字段，照搬 TRSS）
+// 公钥（用于加密 login_ticket 密码等字段）
 const publicKey = `-----BEGIN PUBLIC KEY-----
 MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDDvekdPMHN3AYhm/vktJT+YJr7cI5DcsNKqdsx5DZX0gDuWFuIjzdwButrIYPNmRJ1G8ybDIF7oDW2ePpm5sMbL9zs
 9ExXCdvqrn51qELbqj0XxtMTIpaCHFSI50PfPpTFV9Xt/hmyVwokoOXFlAEgCn+Q
@@ -52,7 +52,7 @@ function ds(data) {
   return `${t},${r},${h}`;
 }
 
-// HYPContainer 请求头（米哈游官方启动器通道）—— 照搬 TRSS app_request
+// HYPContainer 请求头（米哈游官方启动器通道）
 function appRequest(url, { data, device_id }) {
   return fetch(url, {
     method: "post",
@@ -67,7 +67,7 @@ function appRequest(url, { data, device_id }) {
   });
 }
 
-// passport 通用请求（Hyperion �ewed）—— �照搬 TRSS request
+// passport 通用请求（Hyperion 风格）
 // 无 data 时默认 GET（不设 method），有 data 时 POST
 function request(url, { data, aigis, cookie } = {}) {
   const opts = {};
