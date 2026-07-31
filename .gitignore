@@ -153,3 +153,6 @@ yunzai
 
 # 用户配置文件
 config/config/
+
+# AtomCode 本地配置
+.atomcode/
