@@ -1109,12 +1109,13 @@ export default class GachaLog extends base {
 
     /** 检查cookie中是否包含stoken，如果没有则尝试从存档读 */
     let hasStoken = /stoken_v2|stoken=/.test(ck)
-    logger.mark(`[获取authkey] UID:${this.uid} region:${region} gameBiz:${gameBiz} hasStoken:${hasStoken} hasLoginTicket:${!!loginTicket}`)
+    logger.mark(`[获取authkey] UID:${this.uid} region:${region} gameBiz:${gameBiz} hasStoken:${hasStoken} hasLoginTicket:${!!loginToken} hasCookieToken:${!!param.cookie_token}`)
 
-    if (!hasStoken) {
-      // 优先从 MysUserDB.stoken 字段读（扫码登录写入）
+    // genAuthKey 端点用 cookie_token 做 identity，不是 stoken
+    // 存档 ck 缺 cookie_token 时，用存档 stoken 换取 cookie_token 补进 ck
+    if (!param.cookie_token) {
       let ltuid = param.ltuid || param.account_id || param.ltmid_v2
-      if (ltuid) {
+      if (!hasStoken && ltuid) {
         try {
           const { MysUserDB } = await import("./db/index.js")
           const mysDb = await MysUserDB.find(Number(ltuid))
@@ -1127,17 +1128,57 @@ export default class GachaLog extends base {
           logger.error(`[获取authkey] 读取存档stoken异常: ${err}`)
         }
       }
-
-      // 存档没有则用 login_ticket 换取
+      // 存档没 stoken 则用 login_ticket 换取
       if (!hasStoken && loginTicket) {
         logger.mark(`[获取authkey] 使用login_ticket换取stoken...`)
         let stokenRes = await this._getStokenByLoginTicket(loginTicket, ck)
         if (stokenRes) {
-          /** 将stoken拼接到cookie中 */
           ck += ` ${stokenRes.stoken};${stokenRes.stuid};`
+          hasStoken = true
           logger.mark(`[获取authkey] stoken获取成功`)
         } else {
           logger.error(`[获取authkey] 换取stoken失败`)
+        }
+      }
+      // 有 stoken 后换 cookie_token
+      if (hasStoken) {
+        try {
+          const stokenParam = {}
+          ck.split(";").forEach(v => {
+            let tmp = lodash.trim(v).replace("=", "~").split("~")
+            stokenParam[tmp[0]] = tmp[1]
+          })
+          const stokenVal = stokenParam.stoken || stokenParam.stoken_v2
+          const stuidVal = stokenParam.stuid || ltuid
+          const midVal = stokenParam.mid
+          if (stokenVal) {
+            const stokenCookieStr = `stoken=${stokenVal};stuid=${stuidVal};mid=${midVal}`
+            let ckRes = await fetch(
+              `https://passport-api.mihoyo.com/account/auth/api/getCookieAccountInfoBySToken?stoken=${stokenVal}&uid=${stuidVal}&mid=${midVal}`,
+              {
+                headers: {
+                  "x-rpc-app_version": "2.104.0",
+                  "Content-Type": "application/json",
+                  Accept: "application/json",
+                  "x-rpc-game_biz": "bbs_cn",
+                  "x-rpc-app_id": "bll8iq97cem8",
+                  "x-rpc-client_type": "2",
+                  "User-Agent": "Hyperion/550 CFNetwork/3860.500.112 Darwin/25.4.0",
+                  Cookie: stokenCookieStr,
+                },
+              },
+            )
+            ckRes = await ckRes.json()
+            logger.mark(`[获取authkey] 换cookie_token: ${JSON.stringify(ckRes)}`)
+            if (ckRes.retcode === 0 && ckRes.data?.cookie_token) {
+              ck += ` cookie_token=${ckRes.data.cookie_token};`
+              logger.mark(`[获取authkey] cookie_token换取成功`)
+            } else {
+              logger.error(`[获取authkey] 换取cookie_token失败 retcode:${ckRes.retcode}`)
+            }
+          }
+        } catch (err) {
+          logger.error(`[获取authkey] 换取cookie_token异常: ${err}`)
         }
       }
     }
