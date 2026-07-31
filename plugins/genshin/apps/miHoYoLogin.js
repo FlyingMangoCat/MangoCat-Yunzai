@@ -81,7 +81,7 @@ export class miHoYoLogin extends plugin {
   /** 终止进行中的扫码登录 */
   qrTerminate() {
     if (Running[this.e.user_id]) {
-      Running[this.e.user_id] = false;
+      delete Running[this.e.user_id];
       this.reply("已终止扫码登录", true);
     } else {
       this.reply("当前没有进行中的扫码登录", true);
@@ -95,7 +95,7 @@ export class miHoYoLogin extends plugin {
 
     // 终止当前登录
     if (terminate && Running[this.e.user_id]) {
-      Running[this.e.user_id] = false;
+      delete Running[this.e.user_id];
       return this.reply("已终止扫码登录", true);
     }
 
@@ -121,7 +121,7 @@ export class miHoYoLogin extends plugin {
       logger.mark(`[扫码登录] 创建二维码: ${JSON.stringify(res)}`);
 
       if (res.retcode !== 0) {
-        Running[this.e.user_id] = false;
+        delete Running[this.e.user_id];
         return this.reply(`创建二维码失败: ${res.message || "unknown"}`, true);
       }
 
@@ -142,7 +142,7 @@ export class miHoYoLogin extends plugin {
       );
     } catch (err) {
       logger.error("[扫码登录] 创建二维码异常:", err);
-      Running[this.e.user_id] = false;
+      delete Running[this.e.user_id];
       return this.reply("创建二维码失败，请查看日志", true);
     }
 
@@ -170,7 +170,7 @@ export class miHoYoLogin extends plugin {
         res = await res.json();
 
         if (res.retcode !== 0) {
-          Running[this.e.user_id] = false;
+          delete Running[this.e.user_id];
           return this.reply(
             [
               "二维码已过期，请重新扫码登录",
@@ -204,7 +204,7 @@ export class miHoYoLogin extends plugin {
       }
     }
 
-    Running[this.e.user_id] = false;
+    delete Running[this.e.user_id];
 
     if (!finalRes) {
       return this.reply(

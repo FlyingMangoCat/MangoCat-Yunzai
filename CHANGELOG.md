@@ -1,3 +1,14 @@
+ # 3.1.6
+
+ * 新增：`#扫码登录` / `#扫码终止` 命令，扫码登录米哈游账号自动绑定 cookie 与 stoken
+   * 调米哈游 passport API 生成二维码并轮询登录状态
+   * 扫码成功后调用 MangoCat 原生 `User.bing()` 绑定流程，保障与下游插件兼容
+   * stoken 独立写入 `MysUserDB.stoken` 字段，供抽卡记录等场景直接读取
+ * 新增：`MysUserDB` 新增 `stoken` 字段，`BaseModel.syncWithAlter()` 对已存在的表自动 ALTER TABLE ADD COLUMN 补齐缺失列
+ * 优化：`gachaLog.getAuthKeyFromCookie()` 优先从存档 `stoken` 字段读取，读不到再 fallback 到 `login_ticket` 换取
+ * 修复：扫码轮询使用不存在的 `lodash.sleep` 导致高速死循环打 API
+ * 修复：SQLite 已存在表新增字段时 `no such column: stoken` 错误
+
  # 3.1.5
 
  * 新增：`#星铁更新抽卡记录` 命令，通过已绑定的米游社 cookie 自动获取 authkey 更新星铁抽卡记录
