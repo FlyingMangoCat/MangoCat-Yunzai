@@ -1109,7 +1109,7 @@ export default class GachaLog extends base {
 
     /** 检查cookie中是否包含stoken，如果没有则尝试从存档读 */
     let hasStoken = /stoken_v2|stoken=/.test(ck)
-    logger.mark(`[获取authkey] UID:${this.uid} region:${region} gameBiz:${gameBiz} hasStoken:${hasStoken} hasLoginTicket:${!!loginToken} hasCookieToken:${!!param.cookie_token}`)
+    logger.mark(`[获取authkey] UID:${this.uid} region:${region} gameBiz:${gameBiz} hasStoken:${hasStoken} hasLoginTicket:${!!loginTicket} hasCookieToken:${!!param.cookie_token}`)
 
     // genAuthKey 端点用 cookie_token 做 identity，不是 stoken
     // 存档 ck 缺 cookie_token 时，用存档 stoken 换取 cookie_token 补进 ck
