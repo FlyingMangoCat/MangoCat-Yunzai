@@ -64,7 +64,7 @@ export class miHoYoLogin extends plugin {
       name: "米哈游扫码登录",
       dsc: "扫码登录米哈游账号，自动绑定ck和stoken",
       event: "message",
-      priority: 300,
+      priority: -114514,
       rule: [
         {
           reg: "^#?扫码登录(终止)?$",
