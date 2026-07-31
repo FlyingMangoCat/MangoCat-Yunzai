@@ -66,6 +66,6 @@ class MysUserDB extends BaseModel {
 }
 
 BaseModel.initDB(MysUserDB, COLUMNS)
-await MysUserDB.sync()
+await BaseModel.syncWithAlter(MysUserDB)
 
 export default MysUserDB

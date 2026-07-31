@@ -36,6 +36,6 @@ const COLUMNS = {
 class UserGameDB extends BaseModel {}
 
 BaseModel.initDB(UserGameDB, COLUMNS)
-await UserGameDB.sync()
+await BaseModel.syncWithAlter(UserGameDB)
 
 export default UserGameDB

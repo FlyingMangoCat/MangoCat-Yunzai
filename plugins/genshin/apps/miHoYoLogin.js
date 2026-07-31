@@ -150,7 +150,7 @@ export class miHoYoLogin extends plugin {
     let scanned = false;
     let finalRes = null;
     for (let n = 1; n < 60; n++) {
-      await lodash.sleep(5000);
+      await new Promise((r) => setTimeout(r, 5000));
 
       if (Running[this.e.user_id] === false) {
         return this.reply(
