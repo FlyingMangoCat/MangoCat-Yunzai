@@ -436,6 +436,7 @@ export default class MysUser extends BaseModel {
     this.ck = data.ck || this.ck || ""
     this.type = data.type || this.type || "mys"
     this.device = data.device || this.device || MysUtil.getDeviceGuid()
+    this.stoken = data.stoken || this.stoken || ""
     this.uids = this.uids || {}
     let self = this
     MysUtil.eachGame(game => {

@@ -1107,19 +1107,38 @@ export default class GachaLog extends base {
     })
     let loginTicket = param.login_ticket || ""
 
-    /** 检查cookie中是否包含stoken，如果没有则用login_ticket换取 */
+    /** 检查cookie中是否包含stoken，如果没有则尝试从存档读 */
     let hasStoken = /stoken_v2|stoken=/.test(ck)
     logger.mark(`[获取authkey] UID:${this.uid} region:${region} gameBiz:${gameBiz} hasStoken:${hasStoken} hasLoginTicket:${!!loginTicket}`)
 
-    if (!hasStoken && loginTicket) {
-      logger.mark(`[获取authkey] 使用login_ticket换取stoken...`)
-      let stokenRes = await this._getStokenByLoginTicket(loginTicket, ck)
-      if (stokenRes) {
-        /** 将stoken拼接到cookie中 */
-        ck += ` ${stokenRes.stoken};${stokenRes.stuid};`
-        logger.mark(`[获取authkey] stoken获取成功`)
-      } else {
-        logger.error(`[获取authkey] 换取stoken失败`)
+    if (!hasStoken) {
+      // 优先从 MysUserDB.stoken 字段读（扫码登录写入）
+      let ltuid = param.ltuid || param.account_id || param.ltmid_v2
+      if (ltuid) {
+        try {
+          const { MysUserDB } = await import("./db/index.js")
+          const mysDb = await MysUserDB.find(Number(ltuid))
+          if (mysDb?.stoken) {
+            ck += ` ${mysDb.stoken};`
+            hasStoken = true
+            logger.mark(`[获取authkey] 从存档读取stoken成功 ltuid:${ltuid}`)
+          }
+        } catch (err) {
+          logger.error(`[获取authkey] 读取存档stoken异常: ${err}`)
+        }
+      }
+
+      // 存档没有则用 login_ticket 换取
+      if (!hasStoken && loginTicket) {
+        logger.mark(`[获取authkey] 使用login_ticket换取stoken...`)
+        let stokenRes = await this._getStokenByLoginTicket(loginTicket, ck)
+        if (stokenRes) {
+          /** 将stoken拼接到cookie中 */
+          ck += ` ${stokenRes.stoken};${stokenRes.stuid};`
+          logger.mark(`[获取authkey] stoken获取成功`)
+        } else {
+          logger.error(`[获取authkey] 换取stoken失败`)
+        }
       }
     }
 

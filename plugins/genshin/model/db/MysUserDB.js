@@ -19,6 +19,8 @@ const COLUMNS = {
   // CK
   ck: Types.STRING,
   device: Types.STRING,
+  // 扫码登录获取的 stoken，独立存储供抽卡记录等场景直接读取
+  stoken: Types.STRING,
   uids: {
     type: Types.STRING,
     get() {
@@ -57,6 +59,7 @@ class MysUserDB extends BaseModel {
     this.ck = mys.ck
     this.type = mys.type
     this.device = mys.device
+    this.stoken = mys.stoken || ""
     this.uids = mys.uids
     await db.save()
   }
