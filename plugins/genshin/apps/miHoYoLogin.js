@@ -1,6 +1,7 @@
 import plugin from "../../../lib/plugins/plugin.js";
 import QR from "qrcode";
 import lodash from "lodash";
+import crypto from "node:crypto";
 import fetch from "node-fetch";
 import User from "../model/user.js";
 import MysUser from "../model/mys/MysUser.js";
@@ -12,7 +13,46 @@ const API_QUERY = "https://passport-api.mihoyo.com/account/ma-cn-passport/app/qu
 // 用 stoken 换 cookie_token 的接口
 const API_GET_COOKIE = "https://passport-api.mihoyo.com/account/auth/api/getCookieAccountInfoBySToken";
 
-// HYPContainer 请求头（米哈游官方启动器通道）
+// 公钥（用于加密 login_ticket 密码等字段，照搬 TRSS）
+const publicKey = `-----BEGIN PUBLIC KEY-----
+MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDDvekdPMHN3AYhm/vktJT+YJr7cI5DcsNKqdsx5DZX0gDuWFuIjzdwButrIYPNmRJ1G8ybDIF7oDW2ePpm5sMbL9zs
+9ExXCdvqrn51qELbqj0XxtMTIpaCHFSI50PfPpTFV9Xt/hmyVwokoOXFlAEgCn+Q
+CgGs52bFoYMtyi+xEQIDAQAB
+-----END PUBLIC KEY-----`;
+
+function randomString(n) {
+  return lodash
+    .sampleSize(
+      "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
+      n,
+    )
+    .join("");
+}
+
+function encryptData(data) {
+  return crypto
+    .publicEncrypt(
+      {
+        key: publicKey,
+        padding: crypto.constants.RSA_PKCS1_PADDING,
+      },
+      data,
+    )
+    .toString("base64");
+}
+
+function md5(data) {
+  return crypto.createHash("md5").update(data).digest("hex");
+}
+
+function ds(data) {
+  const t = Math.floor(Date.now() / 1000);
+  const r = randomString(6);
+  const h = md5(`salt=JwYDpKvLj6MrMqqYU6jTKF17KNO2PXoS&t=${t}&r=${r}&b=${data}&q=`);
+  return `${t},${r},${h}`;
+}
+
+// HYPContainer 请求头（米哈游官方启动器通道）—— 照搬 TRSS app_request
 function appRequest(url, { data, device_id }) {
   return fetch(url, {
     method: "post",
@@ -27,32 +67,32 @@ function appRequest(url, { data, device_id }) {
   });
 }
 
-// 通用 passport 请求（Hyperion 头）
-function passportRequest(url, { data, cookie } = {}) {
-  const opts = {
-    method: "post",
-    headers: {
-      "x-rpc-app_version": "2.104.0",
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      "x-rpc-game_biz": "bbs_cn",
-      "x-rpc-app_id": "bll8iq97cem8",
-      "x-rpc-client_type": "2",
-      "User-Agent": "Hyperion/550 CFNetwork/3860.500.112 Darwin/25.4.0",
-    },
+// passport 通用请求（Hyperion �ewed）—— �照搬 TRSS request
+// 无 data 时默认 GET（不设 method），有 data 时 POST
+function request(url, { data, aigis, cookie } = {}) {
+  const opts = {};
+  if (data) {
+    opts.method = "post";
+    opts.body = JSON.stringify(data);
+  }
+  opts.headers = {
+    "x-rpc-app_version": "2.104.0",
+    DS: ds(opts.body ?? ""),
+    "x-rpc-aigis": aigis,
+    "Content-Type": "application/json",
+    Accept: "application/json",
+    "x-rpc-game_biz": "bbs_cn",
+    "x-rpc-sys_version": "12",
+    "x-rpc-device_id": randomString(16),
+    "x-rpc-device_fp": randomString(13),
+    "x-rpc-device_name": randomString(16),
+    "x-rpc-device_model": randomString(16),
+    "x-rpc-app_id": "bll8iq97cem8",
+    "x-rpc-client_type": "2",
+    "User-Agent": "Hyperion/550 CFNetwork/3860.500.112 Darwin/25.4.0",
+    Cookie: cookie,
   };
-  if (data) opts.body = JSON.stringify(data);
-  if (cookie) opts.headers.Cookie = cookie;
   return fetch(url, opts);
-}
-
-function randomString(n) {
-  return lodash
-    .sampleSize(
-      "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
-      n,
-    )
-    .join("");
 }
 
 // 进行中的扫码会话，按 user_id 索引
@@ -243,7 +283,7 @@ export class miHoYoLogin extends plugin {
     const stokenCookie = `stoken=${stoken};stuid=${uid};mid=${mid}`;
     let cookieToken = "";
     try {
-      let ckRes = await passportRequest(
+      let ckRes = await request(
         `${API_GET_COOKIE}?stoken=${stoken}&uid=${uid}&mid=${mid}`,
         { cookie: stokenCookie },
       );
