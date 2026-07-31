@@ -256,10 +256,22 @@ export class miHoYoLogin extends plugin {
       logger.error("[扫码登录] 换 cookie_token 异常:", err);
     }
 
+    if (!cookieToken) {
+      delete Running[this.e.user_id];
+      return this.reply(
+        [
+          "换取 cookie_token 失败，请稍后重试 #扫码登录",
+          segment.button([{ text: "扫码登录", callback: "#扫码登录" }]),
+        ],
+        true,
+      );
+    }
+
     // 拼接 MangoCat bing() 能识别的 ck 字符串
-    // 格式: ltoken=xxx;ltuid=xxx;cookie_token=xxx;account_id=xxx;stoken=xxx;stuid=xxx;mid=xxx
+    // ltoken 留空占位（扫码通道没有独立 ltoken，避免 bing() 拼出 ltoken=undefined 脏数据）
+    // 格式: ltoken=;ltuid=xxx;cookie_token=xxx;account_id=xxx;stoken=xxx;stuid=xxx;mid=xxx
     const ckStr = [
-      `ltoken=${stoken}`, // 扫码通道没有独立 ltoken，用 stoken 代ltoken 位
+      `ltoken=`,
       `ltuid=${uid}`,
       `cookie_token=${cookieToken}`,
       `account_id=${uid}`,
