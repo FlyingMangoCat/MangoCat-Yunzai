@@ -138,14 +138,9 @@ export class gcLog extends plugin {
     this.e.isAll = !!this.e.msg.includes("全部");
     let data = await new GachaLog(this.e).getLogData();
     if (!data) return;
-    let name;
+    let name = `html/gacha/gacha-log`;
     if (this.e.isAll) {
-      name = "gachaAllLog";
-      data.tplFile = "./plugins/genshin/resources/html/gacha/gacha-all-log.html";
-      data.saveId = "gacha-all-log";
-    } else {
-      name = "gachaLog";
-      this.srHead(name, data);
+      name = `html/gacha/gacha-all-log`;
     }
     let img = await puppeteer.screenshot(name, data);
     if (img) await this.reply(img);
