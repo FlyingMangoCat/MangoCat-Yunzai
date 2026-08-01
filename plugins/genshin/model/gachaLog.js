@@ -2,9 +2,9 @@ import base from "./base.js"
 import fetch from "node-fetch"
 import lodash from "lodash"
 import fs from "node:fs"
+import path from "node:path"
 import common from "../../../lib/common/common.js"
 import gsCfg from "./gsCfg.js"
-import { Character, Weapon } from "#liulian.models"
 import MysUser from "./mys/MysUser.js"
 
 export default class GachaLog extends base {
@@ -43,19 +43,33 @@ export default class GachaLog extends base {
   }
 
   static getIcon(name, type = "role", game = "") {
-    if (type === "role" || type === "角色") {
-      let char = Character.get(name, game)
-      if (!char) {
-        console.log("not-found-char", name, game)
-      }
-      return char?.imgs?.face || ""
-    } else if (type === "weapon" || type === "武器" || type === "光锥") {
-      let weapon = Weapon.get(name, game)
-      if (!weapon) {
-        console.log("not-found-weapon", `[${name}]`, game)
-      }
-      return weapon?.imgs?.icon || ""
+    const isSr = game === "sr"
+    /** 按游戏/类型选资源根目录 */
+    let baseDir
+    if (isSr) {
+      baseDir = type === "role" || type === "角色"
+        ? "plugins/liulian-plugin/resources/星铁/role"
+        : "plugins/genshin/resources/StarRail/img/weapon"
+    } else {
+      baseDir = type === "role" || type === "角色"
+        ? "plugins/liulian-plugin/resources/genshin/logo/role"
+        : "plugins/genshin/resources/img/weapon"
     }
+    /** 检查 .png/.webp/.jpg 是否存在 */
+    for (const ext of [".webp", ".png", ".jpg"]) {
+      const full = path.join(baseDir, `${name}${ext}`)
+      if (fs.existsSync(full)) {
+        /** 转成相对 pluResPath 的引用路径 */
+        return full.replace(/^plugins\/liulian-plugin\/resources\//, "../../liulian-plugin/resources/")
+          .replace(/^plugins\/genshin\/resources\//, "")
+      }
+    }
+    if (type === "role" || type === "角色") {
+      console.log("not-found-char", name, game)
+    } else {
+      console.log("not-found-weapon", `[${name}]`, game)
+    }
+    return ""
   }
 
   async logUrl() {
