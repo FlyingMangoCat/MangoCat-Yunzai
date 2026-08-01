@@ -31,8 +31,8 @@ export default class base {
         /** 绝对路径 */
         pluResPath: `${this._path}/plugins/genshin/resources/StarRail/`,
         srtempFile: "StarRail/",
-        /** 星铁头部背景图（黑天鹅立绘） */
-        headImg: `../../liulian-plugin/resources/星铁/splash/黑天鹅.webp`,
+        /** 星铁头部背景图（符玄立绘） */
+        headImg: `../../liulian-plugin/resources/星铁/splash/符玄.webp`,
         game: "sr",
       };
     }
