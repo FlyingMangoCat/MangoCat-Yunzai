@@ -1153,21 +1153,9 @@ export default class GachaLog extends base {
         const midVal = stokenParam.mid
         if (stokenVal) {
           const stokenCookieStr = `stoken=${stokenVal};stuid=${stuidVal};mid=${midVal}`
-          let ckRes = await fetch(
-            `https://passport-api.mihoyo.com/account/auth/api/getCookieAccountInfoBySToken?stoken=${stokenVal}&uid=${stuidVal}&mid=${midVal}`,
-            {
-              headers: {
-                "x-rpc-app_version": "2.104.0",
-                DS: this._getCookieTokenDs(),
-                "Content-Type": "application/json",
-                Accept: "application/json",
-                "x-rpc-game_biz": "bbs_cn",
-                "x-rpc-app_id": "bll8iq97cem8",
-                "x-rpc-client_type": "2",
-                "User-Agent": "Hyperion/550 CFNetwork/3860.500.112 Darwin/25.4.0",
-                Cookie: stokenCookieStr,
-              },
-            },
+          let ckRes = await this._passportRequest(
+            `https://passport-api.mihoyo.com/account/auth/api/getCookieAccountInfoBySToken?stoken=${stokenVal}&uid=${stuidVal}`,
+            { cookie: stokenCookieStr },
           )
           ckRes = await ckRes.json()
           logger.mark(`[获取authkey] 换cookie_token: ${JSON.stringify(ckRes)}`)
@@ -1249,15 +1237,36 @@ export default class GachaLog extends base {
     return { stoken: `stoken=${stokenItem.token}`, stuid: `stuid=${stuid}` }
   }
 
-  /**
-   * getCookieAccountInfoBySToken 接口的 DS 签名
-   * 算法: md5(`salt=JwYDpKvLj6MrMqqYU6jTKF17KNO2PXoS&t=${t}&r=${r}&b=${body}&q=${query}`)
-   * 该接口参数都在 URL query 里，body 为空
-   */
-  _getCookieTokenDs() {
+  _passportDs(data) {
     const t = Math.floor(Date.now() / 1000)
-    const r = lodash.sampleSize("0123456789abcdefghijklmnopqrstuvwxyz", 6).join("")
-    const h = crypto.createHash("md5").update(`salt=JwYDpKvLj6MrMqqYU6jTKF17KNO2PXoS&t=${t}&r=${r}&b=&q=`).digest("hex")
+    const r = lodash.sampleSize("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", 6).join("")
+    const h = crypto.createHash("md5").update(`salt=JwYDpKvLj6MrMqqYU6jTKF17KNO2PXoS&t=${t}&r=${r}&b=${data}&q=`).digest("hex")
     return `${t},${r},${h}`
+  }
+
+  _passportRequest(url, { data, aigis, cookie } = {}) {
+    const opts = {}
+    if (data) {
+      opts.method = "post"
+      opts.body = JSON.stringify(data)
+    }
+    opts.headers = {
+      "x-rpc-app_version": "2.104.0",
+      DS: this._passportDs(opts.body ?? ""),
+      "x-rpc-aigis": aigis,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      "x-rpc-game_biz": "bbs_cn",
+      "x-rpc-sys_version": "12",
+      "x-rpc-device_id": lodash.sampleSize("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", 16).join(""),
+      "x-rpc-device_fp": lodash.sampleSize("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", 13).join(""),
+      "x-rpc-device_name": lodash.sampleSize("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", 16).join(""),
+      "x-rpc-device_model": lodash.sampleSize("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", 16).join(""),
+      "x-rpc-app_id": "bll8iq97cem8",
+      "x-rpc-client_type": "2",
+      "User-Agent": "Hyperion/550 CFNetwork/3860.500.112 Darwin/25.4.0",
+      Cookie: cookie,
+    }
+    return fetch(url, opts)
   }
 }
