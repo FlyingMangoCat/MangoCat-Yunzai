@@ -18,10 +18,13 @@ export default class base {
    */
   get screenData() {
     let headImg = "枫原万叶";
+    const layoutPath = `${this._path}/plugins/genshin/resources/html/layout/`;
 
     return {
       saveId: this.userId,
       cwd: this._path,
+      genshinLayout: layoutPath + "genshin.html",
+      defaultLayout: layoutPath + "default.html",
       tplFile: `./plugins/genshin/resources/html/${this.model}/${this.model}.html`,
       /** 绝对路径 */
       pluResPath: `${this._path}/plugins/genshin/resources/`,
