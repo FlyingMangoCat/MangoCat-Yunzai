@@ -1,5 +1,4 @@
 import plugin from "../../../lib/plugins/plugin.js";
-import puppeteer from "../../../lib/puppeteer/puppeteer.js";
 import fs from "node:fs";
 import common from "../../../lib/common/common.js";
 import GachaLog from "../model/gachaLog.js";
@@ -103,9 +102,10 @@ export class gcLog extends plugin {
 
     let data = await new GachaLog(this.e).logUrl();
     if (!data) return;
-    let url = this.srHead("gachaLog", data);
-    let img = await puppeteer.screenshot(url, data);
-    if (img) await this.reply(img);
+
+    await this.renderImg("genshin", `html/gacha/gacha-log`, data);
+
+    if (this.e.isGroup) this.e.reply("已收到链接，请撤回", false, { at: true });
   }
 
   /** 发送output_log.txt日志文件 */
@@ -128,9 +128,7 @@ export class gcLog extends plugin {
     if (!data) return false;
 
     if (typeof data != "object") return;
-    let url = this.srHead("gachaLog", data);
-    let img = await puppeteer.screenshot(url, data);
-    if (img) await this.reply(img);
+    await this.renderImg("genshin", `html/gacha/gacha-log`, data);
   }
 
   /** #抽卡记录 */
@@ -142,8 +140,7 @@ export class gcLog extends plugin {
     if (this.e.isAll) {
       name = `html/gacha/gacha-all-log`;
     }
-    let img = await puppeteer.screenshot(name, data);
-    if (img) await this.reply(img);
+    await this.renderImg("genshin", name, data, { retType: "base64" });
   }
 
   /** 导出记录 */
@@ -221,19 +218,13 @@ export class gcLog extends plugin {
     let name = url;
     if (this.e.isSr) {
       name = `StarRail/${url}`;
-      data.tplFile = `./plugins/genshin/resources/StarRail/html/${url}/${url}.html`;
-      data.headStyle = `<style> .head_box { background: url(${this._path}/plugins/genshin/resources/StarRail/img/worldcard/星穹列车.png) #fff; background-position-x: -10px; background-repeat: no-repeat; background-size: 540px; background-position-y: -100px; </style>`;
-    } else {
-      data.tplFile = `./plugins/genshin/resources/html/${url}/${url}.html`;
     }
     return name;
   };
   async logCount() {
     let data = await new LogCount(this.e).count();
     if (!data) return;
-    let url = this.srHead("logCount", data);
-    let img = await puppeteer.screenshot(url, data);
-    if (img) await this.reply(img);
+    await this.renderImg("genshin", `html/gacha/log-count`, data, { retType: "base64" });
   }
 
   /** #星铁更新抽卡记录 — 通过已绑定的cookie自动获取authkey更新抽卡记录 */
