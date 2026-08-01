@@ -1,5 +1,3 @@
-import fs from "node:fs"
-
 export default class base {
   constructor(e = {}) {
     this.e = e;
@@ -33,8 +31,8 @@ export default class base {
         /** 绝对路径 */
         pluResPath: `${this._path}/plugins/genshin/resources/StarRail/`,
         srtempFile: "StarRail/",
-        /** 星铁头部背景图（随机立绘） */
-        headImg: this.randSplash("sr"),
+        /** 星铁头部背景图（黑天鹅立绘） */
+        headImg: `../../liulian-plugin/resources/星铁/splash/黑天鹅.webp`,
         game: "sr",
       };
     }
@@ -44,27 +42,9 @@ export default class base {
       /** 绝对路径 */
       pluResPath: `${this._path}/plugins/genshin/resources/`,
       srtempFile: "",
-      /** 原神头部背景图（随机立绘） */
-      headImg: this.randSplash("gs"),
+      /** 原神头部背景图（胡桃立绘） */
+      headImg: `../../liulian-plugin/resources/genshin/logo/splash/胡桃.png`,
       game: "gs",
     };
-  }
-
-  /** 随机取一张立绘图路径 */
-  randSplash(game = "gs") {
-    try {
-      const dir = game === "sr"
-        ? `${this._path}/plugins/liulian-plugin/resources/星铁/splash`
-        : `${this._path}/plugins/liulian-plugin/resources/genshin/logo/splash`;
-      const files = fs.readdirSync(dir).filter(f => /\.(png|webp|jpg)$/i.test(f));
-      if (!files.length) return "";
-      const pick = files[Math.floor(Math.random() * files.length)];
-      const rel = game === "sr"
-        ? `../../liulian-plugin/resources/星铁/splash/${pick}`
-        : `../../liulian-plugin/resources/genshin/logo/splash/${pick}`;
-      return rel;
-    } catch (e) {
-      return "";
-    }
   }
 }
