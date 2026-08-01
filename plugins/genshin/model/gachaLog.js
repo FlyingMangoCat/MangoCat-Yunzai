@@ -2,7 +2,6 @@ import base from "./base.js"
 import fetch from "node-fetch"
 import lodash from "lodash"
 import fs from "node:fs"
-import crypto from "node:crypto"
 import common from "../../../lib/common/common.js"
 import gsCfg from "./gsCfg.js"
 import { Character, Weapon } from "#liulian.models"
@@ -1100,81 +1099,62 @@ export default class GachaLog extends base {
 
     this.e.reply(`正在获取抽卡authkey...`)
 
-    /** 从cookie中提取login_ticket，用于换取stoken */
+    /** 从cookie中提取login_ticket、ltuid 等 */
     let param = {}
     ck.split(";").forEach(v => {
       let tmp = lodash.trim(v).replace("=", "~").split("~")
       param[tmp[0]] = tmp[1]
     })
     let loginTicket = param.login_ticket || ""
-
-    /** 检查cookie中是否包含stoken，如果没有则尝试从存档读 */
-    let hasStoken = /stoken_v2|stoken=/.test(ck)
     let ltuid = param.ltuid || param.account_id || param.ltmid_v2
-    logger.mark(`[获取authkey] UID:${this.uid} region:${region} gameBiz:${gameBiz} hasStoken:${hasStoken} hasLoginTicket:${!!loginTicket} hasCookieToken:${!!param.cookie_token}`)
+    logger.mark(`[获取authkey] UID:${this.uid} region:${region} gameBiz:${gameBiz} hasLoginTicket:${!!loginTicket}`)
 
-    // genAuthKey 端点用 cookie_token 做 identity，cookie_token 有效期短
-    // 只要有 stoken，就用 stoken 重新换取新鲜的 cookie_token，覆盖可能过期的旧值
-    if (!hasStoken && ltuid) {
+    // stoken 优先从存档 MysUserDB.stoken 读（扫码登录写入的就是完整 stoken cookie 串）
+    // 其次从 ck 解析，最后用 login_ticket 换取
+    let stokenCookie = ""  // 完整 stoken cookie 串: "stoken=xxx;stuid=xxx;mid=xxx"
+    if (ltuid) {
       try {
         const { MysUserDB } = await import("./db/index.js")
         const mysDb = await MysUserDB.find(Number(ltuid))
         if (mysDb?.stoken) {
-          ck += ` ${mysDb.stoken};`
-          hasStoken = true
+          stokenCookie = mysDb.stoken
           logger.mark(`[获取authkey] 从存档读取stoken成功 ltuid:${ltuid}`)
         }
       } catch (err) {
         logger.error(`[获取authkey] 读取存档stoken异常: ${err}`)
       }
     }
-    // 存档没 stoken 则用 login_ticket 换取
-    if (!hasStoken && loginTicket) {
+    // 存档没有则从 ck 解析
+    if (!stokenCookie && (param.stoken || param.stoken_v2)) {
+      stokenCookie = `stoken=${param.stoken || param.stoken_v2};stuid=${param.stuid || ltuid};mid=${param.mid || ""}`
+    }
+    // 还没有则用 login_ticket 换取
+    if (!stokenCookie && loginTicket) {
       logger.mark(`[获取authkey] 使用login_ticket换取stoken...`)
       let stokenRes = await this._getStokenByLoginTicket(loginTicket, ck)
       if (stokenRes) {
         ck += ` ${stokenRes.stoken};${stokenRes.stuid};`
-        hasStoken = true
+        const tmpParam = {}
+        ck.split(";").forEach(v => {
+          let tmp = lodash.trim(v).replace("=", "~").split("~")
+          tmpParam[tmp[0]] = tmp[1]
+        })
+        stokenCookie = `stoken=${tmpParam.stoken || ""};stuid=${tmpParam.stuid || ltuid};mid=${tmpParam.mid || ""}`
         logger.mark(`[获取authkey] stoken获取成功`)
       } else {
         logger.error(`[获取authkey] 换取stoken失败`)
       }
     }
-    // 有 stoken 就换 cookie_token（不管 ck 里原来有没有，旧的可能已过期）
-    if (hasStoken) {
-      try {
-        const stokenParam = {}
-        ck.split(";").forEach(v => {
-          let tmp = lodash.trim(v).replace("=", "~").split("~")
-          stokenParam[tmp[0]] = tmp[1]
-        })
-        const stokenVal = stokenParam.stoken || stokenParam.stoken_v2
-        const stuidVal = stokenParam.stuid || ltuid
-        const midVal = stokenParam.mid
-        if (stokenVal) {
-          const stokenCookieStr = `stoken=${stokenVal};stuid=${stuidVal};mid=${midVal}`
-          let ckRes = await this._passportRequest(
-            `https://passport-api.mihoyo.com/account/auth/api/getCookieAccountInfoBySToken?stoken=${stokenVal}&uid=${stuidVal}`,
-            { cookie: stokenCookieStr },
-          )
-          ckRes = await ckRes.json()
-          logger.mark(`[获取authkey] 换cookie_token: ${JSON.stringify(ckRes)}`)
-          if (ckRes.retcode === 0 && ckRes.data?.cookie_token) {
-            // 用新 cookie_token 覆盖 ck 里的旧值
-            ck = ck.replace(/cookie_token=[^;]*;?/, "").replace(/\s+$/, "")
-            ck += ` cookie_token=${ckRes.data.cookie_token};`
-            logger.mark(`[获取authkey] cookie_token换取成功`)
-          } else {
-            logger.error(`[获取authkey] 换取cookie_token失败 retcode:${ckRes.retcode}`)
-          }
-        }
-      } catch (err) {
-        logger.error(`[获取authkey] 换取cookie_token异常: ${err}`)
-      }
+
+    if (!stokenCookie) {
+      logger.error(`[获取authkey] 无可用stoken`)
+      this.e.reply("获取authkey失败：无可用stoken，请重新扫码登录")
+      return false
     }
 
+    // 直接用 stoken cookie 串调 genAuthKey，不换 cookie_token，不转 ck
     let MysApi = (await import("./mys/mysApi.js")).default
-    let mysApi = new MysApi(String(this.uid), ck, { log: true }, this.e.isSr)
+    let mysApi = new MysApi(String(this.uid), stokenCookie, { log: true }, this.e.isSr)
     let res = await mysApi.getData("genAuthKey", { game_uid: this.uid, region: region })
     logger.mark(`[获取authkey] 响应: ${JSON.stringify(res)}`)
     if (!res || res.retcode !== 0 || !res.data?.authkey) {
@@ -1235,38 +1215,5 @@ export default class GachaLog extends base {
     }
 
     return { stoken: `stoken=${stokenItem.token}`, stuid: `stuid=${stuid}` }
-  }
-
-  _passportDs(data) {
-    const t = Math.floor(Date.now() / 1000)
-    const r = lodash.sampleSize("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", 6).join("")
-    const h = crypto.createHash("md5").update(`salt=JwYDpKvLj6MrMqqYU6jTKF17KNO2PXoS&t=${t}&r=${r}&b=${data}&q=`).digest("hex")
-    return `${t},${r},${h}`
-  }
-
-  _passportRequest(url, { data, aigis, cookie } = {}) {
-    const opts = {}
-    if (data) {
-      opts.method = "post"
-      opts.body = JSON.stringify(data)
-    }
-    opts.headers = {
-      "x-rpc-app_version": "2.104.0",
-      DS: this._passportDs(opts.body ?? ""),
-      "x-rpc-aigis": aigis,
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      "x-rpc-game_biz": "bbs_cn",
-      "x-rpc-sys_version": "12",
-      "x-rpc-device_id": lodash.sampleSize("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", 16).join(""),
-      "x-rpc-device_fp": lodash.sampleSize("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", 13).join(""),
-      "x-rpc-device_name": lodash.sampleSize("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", 16).join(""),
-      "x-rpc-device_model": lodash.sampleSize("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", 16).join(""),
-      "x-rpc-app_id": "bll8iq97cem8",
-      "x-rpc-client_type": "2",
-      "User-Agent": "Hyperion/550 CFNetwork/3860.500.112 Darwin/25.4.0",
-      Cookie: cookie,
-    }
-    return fetch(url, opts)
   }
 }
