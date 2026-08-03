@@ -20,7 +20,8 @@ export class mysNews extends plugin {
           fnc: "news",
         },
         {
-          reg: "^(#米游社|#mys)(.*)",
+          // 排除面板更新类命令（更新面板/面板更新/全部面板更新/更新全部面板/获取游戏角色详情），避免误拦截
+          reg: "^(#米游社|#mys)(?!.*(更新面板|面板更新|全部面板更新|更新全部面板|获取游戏角色详情))(.*)",
           fnc: "mysSearch",
         },
         {
@@ -105,6 +106,10 @@ export class mysNews extends plugin {
 
   async mysSearch() {
     if (/签到/g.test(this.e.msg)) return false;
+    // 兜底：面板更新类命令直接跳过，交给对应的面板更新功能处理
+    if (/更新面板|面板更新|全部面板更新|更新全部面板|获取游戏角色详情/.test(this.e.msg)) {
+      return false;
+    }
     let data = await new MysNews(this.e).mysSearch();
     if (!data) return;
     await this.reply(data);
