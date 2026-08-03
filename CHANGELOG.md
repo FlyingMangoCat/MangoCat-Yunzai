@@ -12,6 +12,8 @@
    * `toggleUid` 按 `e.game` 切换对应游戏，不再写死原神
  * 修复：liulian-plugin 版本日志读取不到根目录 `CHANGELOG.md`，渲染空图
    * `Changelog (2).js` 路径拼接补 `/`，版本标题与条目正则兼容行首空格
+ * 修复：`#星铁更新抽卡记录` 被星铁plugin抢处理，未绑定抽卡链接时提示"链接已过期"，本体用已绑 cookie 自动获取 authkey 的流程没机会跑
+   * loader 回复钩子检测到"抽卡链接已过期"提示时，拦截并劫持到本体 `gcLog.updateGachaLog()` 流程
 
  # 3.1.6
 
