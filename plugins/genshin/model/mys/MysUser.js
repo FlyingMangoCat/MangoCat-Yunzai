@@ -199,6 +199,70 @@ export default class MysUser extends BaseModel {
   }
 
   /**
+   * 获取ck对应uid列表
+   * @param ck 需要获取的ck
+   * @param withMsg false:uids / true: {uids, msg}
+   * @param force 忽略缓存，强制更新
+   * @returns {Promise<{msg: *, uids}>}
+   */
+  static async getCkUid(ck, withMsg = false, force = false) {
+    let ltuid = ""
+    let testRet = /ltuid=(\w{0,9})/g.exec(ck)
+    if (testRet && testRet[1]) {
+      ltuid = testRet[1]
+    }
+    let uids = []
+    let ret = (msg, retUid) => {
+      retUid = lodash.map(retUid, (a) => a + "")
+      return withMsg ? { msg, uids: retUid } : retUid
+    }
+    if (!ltuid) {
+      return ret("无ltuid", false)
+    }
+
+    if (!force) {
+      // 此处不使用DailyCache，做长期存储
+      uids = await redis.get(`Yz:genshin:mys:ltuid-uids:${ltuid}`)
+      if (uids) {
+        uids = DailyCache.decodeValue(uids, true)
+        if (uids && uids.length > 0) {
+          return ret("", uids)
+        }
+      }
+    }
+
+    uids = []
+    let res = null
+    let msg = "error"
+    for (let serv of ["mys", "hoyolab"]) {
+      let roleRes = await MysUser.getGameRole(ck, serv)
+      if (roleRes?.retcode === 0) {
+        res = roleRes
+        break
+      }
+      if (roleRes.retcode * 1 === -100) {
+        msg = "该ck已失效，请重新登录获取"
+      }
+      msg = roleRes.message || "error"
+    }
+    if (!res) return ret(msg, false)
+    if (!res.data.list || res.data.list.length <= 0) {
+      return ret("该账号尚未绑定原神或星穹角色", false)
+    }
+
+    for (let val of res.data.list) {
+      if (/\d{9}/.test(val.game_uid) && val.game_biz == "hk4e_cn") {
+        uids.push(val.game_uid + "")
+      }
+    }
+    if (uids.length > 0) {
+      await redis.set(`Yz:genshin:mys:ltuid-uids:${ltuid}`, JSON.stringify(uids), { EX: 3600 * 24 * 90 })
+      return ret("", uids)
+    }
+    return ret(msg, false)
+  }
+
+  /**
    * 检查CK状态
    * @param ck 需要检查的CK
    * @returns {Promise<boolean|{msg: string, uids: *[], status: number}>}

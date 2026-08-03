@@ -122,6 +122,15 @@ export default class User extends base {
       data.ck = this.ck
       data.ltuid = this.ltuid
       mys.setCkData(data)
+
+      /** 拉取米游社角色列表，按游戏写入 MysUser.uids（gs/sr/zzz），保证 #uid 与各游戏功能能读到绑定 */
+      let uidRet = await mys.reqMysUid()
+      if (uidRet.status !== 0) {
+        logger.mark(`绑定cookie错误：${uidRet.msg || "cookie错误"}`)
+        mys._delCache()
+        return await this.e.reply(`绑定cookie失败：${uidRet.msg || "cookie错误"}`)
+      }
+
       await user.addMysUser(mys)
       await mys.initCache()
       await user.save()
