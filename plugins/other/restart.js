@@ -32,7 +32,7 @@ export class Restart extends plugin {
 
   async init() {
     let restart = await redis.get(this.key);
-    if (restart && process.argv[1].includes("pm2")) {
+    if (restart && process.env.app_type === "pm2") {
       restart = JSON.parse(restart);
       let time = restart.time || new Date().getTime();
       time = (new Date().getTime() - time) / 1000;
@@ -91,7 +91,7 @@ export class Restart extends plugin {
   }
 
   async stop() {
-    if (!process.argv[1].includes("pm2")) {
+    if (process.env.app_type !== "pm2") {
       logger.mark("关机成功，已停止运行");
       await this.e.reply("关机成功，已停止运行");
       process.exit();

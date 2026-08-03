@@ -14,6 +14,8 @@
    * `Changelog (2).js` 路径拼接补 `/`，版本标题与条目正则兼容行首空格
  * 修复：`#星铁更新抽卡记录` 被星铁plugin抢处理，未绑定抽卡链接时提示"链接已过期"，本体用已绑 cookie 自动获取 authkey 的流程没机会跑
    * loader 回复钩子检测到"抽卡链接已过期"提示时，拦截并劫持到本体 `gcLog.updateGachaLog()` 流程
+ * 修复：pm2 启动时 `process.argv[1]` 是 app.js 路径不含 "pm2"，导致重启耗时消息不发送、`start_type` 误判为 internal
+   * `app.js` / `restart.js` 改用 `process.env.app_type === "pm2"` 判断，重启后正常发送"重启成功：耗时xx秒"
 
  # 3.1.6
 
