@@ -333,13 +333,15 @@ export default class User extends base {
   /** 切换uid */
   async toggleUid(index) {
     let user = await this.user();
-    let uidList = user.ckUids;
+    let game = this.e.game || "gs";
+    let uidList = user.getUidList(game);
     if (index > uidList.length) {
       return await this.e.reply("uid序号输入错误");
     }
     index = Number(index) - 1;
-    await user.setMainUid(index);
-    return await this.e.reply(`切换成功，当前uid：${user.uid}`);
+    await user.setMainUid(index, game);
+    await user.save();
+    return await this.showUid();
   }
 
   /** 加载旧ck */
