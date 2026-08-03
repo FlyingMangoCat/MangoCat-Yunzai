@@ -60,6 +60,37 @@ export class gcLog extends plugin {
 
     this.androidUrl = "docs.qq.com/doc/DUWpYaXlvSklmVXlX";
     this._path = process.cwd().replace(/\\/g, "/");
+    Object.defineProperty(this, "button", {
+      get() {
+        this.prefix = this.e?.isSr ? "*" : "#";
+        return segment.button(
+          [
+            { text: "角色记录", callback: `${this.prefix}角色记录` },
+            { text: "角色统计", callback: `${this.prefix}角色统计` },
+          ],
+          [
+            { text: "武器记录", callback: `${this.prefix}武器记录` },
+            { text: "武器统计", callback: `${this.prefix}武器统计` },
+          ],
+          [
+            { text: "角色联动记录", callback: `${this.prefix}角色联动记录` },
+            { text: "角色联动统计", callback: `${this.prefix}角色联动统计` },
+          ],
+          [
+            { text: "武器联动记录", callback: `${this.prefix}武器联动记录` },
+            { text: "武器联动统计", callback: `${this.prefix}武器联动统计` },
+          ],
+          [
+            { text: "集录记录", callback: `${this.prefix}集录记录` },
+            { text: "集录统计", callback: `${this.prefix}集录统计` },
+          ],
+          [
+            { text: "常驻记录", callback: `${this.prefix}常驻记录` },
+            { text: "常驻统计", callback: `${this.prefix}常驻统计` },
+          ],
+        );
+      },
+    });
   }
 
   async init() {
@@ -140,7 +171,7 @@ export class gcLog extends plugin {
     if (this.e.isAll) {
       name = `html/gacha/gacha-all-log`;
     }
-    await this.renderImg("genshin", name, data, { retType: "base64" });
+    this.reply([await this.renderImg("genshin", name, data, { retType: "base64" }), this.button]);
   }
 
   /** 导出记录 */
@@ -224,7 +255,10 @@ export class gcLog extends plugin {
   async logCount() {
     let data = await new LogCount(this.e).count();
     if (!data) return;
-    await this.renderImg("genshin", `html/gacha/log-count`, data, { retType: "base64" });
+    this.reply([
+      await this.renderImg("genshin", `html/gacha/log-count`, data, { retType: "base64" }),
+      this.button,
+    ]);
   }
 
   /** #星铁更新抽卡记录 — 通过已绑定的cookie自动获取authkey更新抽卡记录 */
