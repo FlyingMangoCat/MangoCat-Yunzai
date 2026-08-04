@@ -55,5 +55,13 @@
     "#yunzai": "./lib/index.js",
     "#liulian": "./plugins/liulian-plugin/components/index.js",
     "#liulian.models": "./plugins/liulian-plugin/model/liulianModels.js"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "canvas",
+      "log4js",
+      "puppeteer",
+      "sqlite3"
+    ]
   }
 }
