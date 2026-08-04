@@ -5,6 +5,7 @@ import fs from "node:fs";
 import common from "../../../lib/common/common.js";
 import MysUser from "./mys/MysUser.js";
 import MysInfo from "./mys/mysInfo.js";
+import NoteUser from "./mys/NoteUser.js";
 import Player from "./Player.js";
 
 export default class User extends base {
@@ -258,6 +259,11 @@ export default class User extends base {
     if (!uid) return;
     uid = uid[0];
     let user = await this.user();
+    // 归属校验：防止 mainId 串号把 uid 绑定到主账号上，绑定必须落到当前发送者自己账号
+    if (user?.qq && this.e?.user_id && String(user.qq) !== String(this.e.user_id)) {
+      logger.mark(`[#绑定uid] 检测到 user 串号(user:${user.qq} != 发送者:${this.e.user_id})，按当前用户重建`)
+      user = await NoteUser.create(this.e.user_id)
+    }
     await user.addRegUid(uid, this.e);
     return await this.showUid();
   }
@@ -265,6 +271,12 @@ export default class User extends base {
   /** #uid */
   async showUid() {
     let user = await this.user()
+    // 归属校验兜底：NoteUser.create(e) 里若 redis 存在 mainId 会把 user 指向主账号，
+    // 导致把别人的 uid 列表发给当前用户。检测到串号时按当前发送者重建，只显示自己的绑定
+    if (user?.qq && this.e?.user_id && String(user.qq) !== String(this.e.user_id)) {
+      logger.mark(`[#uid] 检测到 user 串号(user:${user.qq} != 发送者:${this.e.user_id})，按当前用户重建`)
+      user = await NoteUser.create(this.e.user_id)
+    }
     let uids = [
       { key: "gs", name: "原神" },
       { key: "sr", name: "星穹铁道" },
