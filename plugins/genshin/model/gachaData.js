@@ -504,15 +504,7 @@ export default class GachaData extends base {
   }
 
   static async getStr() {
-    global.strr = "";
-    let res = await fetch(
-      "https://gist.githubusercontent.com/Le-niao/10f061fb9fe8fcfc316c10b422ed06d1/raw/Yunzai-Bot",
-    ).catch(() => {});
-    if (res && res.text) {
-      let strr = (await res.text()) || "";
-      if (strr.includes("html")) strr = "";
-      global.strr = strr;
-    }
+    global.strr = "MangoCat-Yunzai免费开源项目：https://gitee.com/huifeidemangguomao/MangoCat-Yunzai";
   }
 
   getNow() {
