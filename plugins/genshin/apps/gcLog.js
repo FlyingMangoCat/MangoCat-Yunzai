@@ -283,6 +283,17 @@ export class gcLog extends plugin {
       }
       if (i <= 1) await common.sleep(500);
     }
+    /** 所有卡池都更新失败：明确提示，不再假成功 */
+    if (!tmpMsg) {
+      this.e.reply(
+        this.e.isSr
+          ? "抽卡记录更新失败：星铁无法通过cookie自动获取authkey（官方接口限制），请打开游戏→跃迁记录页面→复制链接发送"
+          : "抽卡记录更新失败：authkey无效或已过期，请重新绑定cookie后重试",
+        false,
+        { at: true },
+      );
+      return;
+    }
     MakeMsg.push(tmpMsg);
     MakeMsg.push(
       `\n抽卡记录更新完成，您还可回复\n【${this.e.isSr ? "*" : "#"}全部记录】统计全部抽卡数据\n【${this.e.isSr ? "*光锥" : "#武器"}记录】统计${this.e.isSr ? "星铁光锥" : "武器"}池数据\n【${this.e.isSr ? "*" : "#"}角色统计】按卡池统计数据\n【${this.e.isSr ? "*" : "#"}导出记录】导出记录数据`,

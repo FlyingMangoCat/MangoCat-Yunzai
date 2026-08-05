@@ -253,7 +253,7 @@ export default class apiTool {
         genAuthKey: {
           url: `${host}binding/api/genAuthKey`,
           body: {
-            auth_appid: "webview_gacha",
+            auth_appid: "csc",
             game_biz: "hkrpg_cn",
             game_uid: Number(data.game_uid),
             region: data.region,
