@@ -32,12 +32,18 @@ export default class MysApi {
     let urlMap = this.apiTool.getUrlMap({ ...data, deviceId: this.device });
     if (!urlMap[type]) return false;
 
-    let { url, query = "", body = "", sign = "" } = urlMap[type];
+    let { url, query = "", body = "", sign = "", dsSalt = "" } = urlMap[type];
 
     if (query) url += `?${query}`;
     if (body) body = JSON.stringify(body);
 
     let headers = this.getHeaders(query, body, sign);
+
+    /** web 端签名（DS2），genAuthKey 用 web 签名拿到的 authkey 才能被 getGachaLog 接受 */
+    if (dsSalt === "web") {
+      headers.DS = this.getDS2();
+      headers.Host = "api-takumi.mihoyo.com";
+    }
 
     return { url, headers, body };
   }
@@ -216,6 +222,14 @@ export default class MysApi {
     let r = Math.floor(Math.random() * 900000 + 100000);
     let DS = md5(`salt=${n}&t=${t}&r=${r}&b=${b}&q=${q}`);
     return `${t},${r},${DS}`;
+  }
+
+  /** web 端 DS2 签名（无 body/query），genAuthKey 需用此签名 */
+  getDS2() {
+    const t = Math.round(new Date().getTime() / 1000);
+    const r = lodash.sampleSize("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", 6).join("");
+    const sign = md5(`salt=WGtruoQrwczmsjLOPXzJLnaAYycsLavx&t=${t}&r=${r}`);
+    return `${t},${r},${sign}`;
   }
 
   getGuid() {

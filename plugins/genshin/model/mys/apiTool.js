@@ -258,7 +258,7 @@ export default class apiTool {
             game_uid: Number(data.game_uid),
             region: data.region,
           },
-          sign: true,
+          dsSalt: "web",
         },
       },
       zzz: {
