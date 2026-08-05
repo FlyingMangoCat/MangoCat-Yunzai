@@ -252,7 +252,7 @@ export default class GachaLog extends base {
       logParam = new URLSearchParams({
         authkey_ver: 1,
         sign_type: 2,
-        auth_appid: "csc",
+        auth_appid: "webview_gacha",
         lang: "zh-cn", // 只支持简体中文
         gacha_type: 11,
         page: 1,
