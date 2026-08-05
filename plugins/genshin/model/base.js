@@ -1,3 +1,5 @@
+import { Version } from "../components/index.js";
+
 export default class base {
   constructor(e = {}) {
     this.e = e;
@@ -21,6 +23,8 @@ export default class base {
     const baseData = {
       saveId: this.userId,
       cwd: this._path,
+      yzName: "MangoCat-Yunzai",
+      yzVersion: `v${Version.yunzai}`,
       genshinLayout: layoutPath + "genshin.html",
       defaultLayout: layoutPath + "default.html",
     };
@@ -31,8 +35,8 @@ export default class base {
         /** 绝对路径 */
         pluResPath: `${this._path}/plugins/genshin/resources/StarRail/`,
         srtempFile: "StarRail/",
-        /** 星铁头部背景图（符玄立绘） */
-        headImg: `../../liulian-plugin/resources/星铁/splash/符玄.webp`,
+        /** 星铁头部背景图（名片） */
+        headImg: `img/worldcard/星穹列车.png`,
         game: "sr",
       };
     }
@@ -42,8 +46,8 @@ export default class base {
       /** 绝对路径 */
       pluResPath: `${this._path}/plugins/genshin/resources/`,
       srtempFile: "",
-      /** 原神头部背景图（胡桃立绘） */
-      headImg: `../../liulian-plugin/resources/genshin/logo/splash/胡桃.png`,
+      /** 原神头部背景图（名片） */
+      headImg: `img/namecard/甘雨.png`,
       game: "gs",
     };
   }
