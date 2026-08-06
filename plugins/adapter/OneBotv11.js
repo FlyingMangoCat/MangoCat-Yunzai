@@ -28,7 +28,7 @@ Bot.adapter.push(
       const timeout = setTimeout(() => {
         cache.reject(Bot.makeError("请求超时", request, { timeout: this.timeout }))
         Bot.makeLog("error", ["请求超时", request], data.self_id)
-        ws.terminate()
+        // 不掐断连接：单个请求超时不代表连接失效，terminate 会导致其他 pending 请求全部失败
       }, this.timeout)
 
       return cache.promise
@@ -950,7 +950,7 @@ Bot.adapter.push(
             return this.stat.packet_sent
           },
         },
-        model: "TRSS Yunzai ",
+        model: "FMCYz",
 
         info: {},
         get uin() {
@@ -1513,6 +1513,8 @@ Bot.adapter.push(
       } else if (data.echo) {
         const cache = this.echo.get(data.echo)
         if (cache) return cache.resolve(data)
+        // echo 匹配不到：请求已超时、响应迟到，属正常迟达，降级为 debug 而非未知消息
+        return Bot.makeLog("debug", `迟到的API响应：${logger.magenta(data.raw)}`, data.self_id)
       }
       Bot.makeLog("warn", `未知消息：${logger.magenta(data.raw)}`, data.self_id)
     }
