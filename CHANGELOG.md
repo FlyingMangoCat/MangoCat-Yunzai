@@ -1,9 +1,10 @@
  # 3.1.8
 
- * 修复：Windows 前台运行（node .）下 `#重启` / `#更新` 自动重启后控制台卡死（键盘输入与 Ctrl+C 全部失效），但 bot 本体收发指令正常
+ * 修复：前台运行（node .）下 `#重启` / `#更新` 自动重启后控制台卡死（键盘输入与 Ctrl+C 全部失效），但 bot 本体收发指令正常
    * 根因：`util.cmdStart` 在 Windows 上执行 `cmd /c start "" node app.js` 且 spawn 带 `detached: true`，新进程被放入独立进程组，收不到控制台 Ctrl+C 信号；旧进程退出前也未关闭 stdin readline，终端 raw mode 未恢复，导致控制台完全失控
-   * `util.cmdStart` 去掉 `cmd /c start` 包装与 `detached`，改为直接 spawn 且与当前进程同组，新进程接管当前控制台窗口，Ctrl+C 等信号可正常送达
+   * `util.cmdStart` 去掉 `cmd /c start` 包装与 `detached`（所有平台生效），改为直接 spawn 且与当前进程同组，新进程接管当前控制台窗口，Ctrl+C 等信号可正常送达
    * `Bot.restart()` internal 分支调整顺序：先创建新进程，退出前再关闭 stdin readline（先移除 close 监听避免触发 Bot.exit），恢复终端 raw mode
+   * Linux/macOS 前台正常路径走 `process.execve` 原地替换进程映像（无新进程，本无此问题）；旧版 Node 无 execve 时 fallback 到 cmdStart，同样受益于去 detached 修复
  * 说明：pm2 启动方式（`pnpm start`）不受影响，仍走 `pnpm run restart` 分支
 
  # 3.1.7
