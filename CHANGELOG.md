@@ -1,3 +1,9 @@
+ # 3.1.10
+
+ * 修复：`get_group_msg_history` / `get_friend_msg_history` / `get_forward_msg` 拉取大响应（如 11 万+ 条历史消息）时因默认 60s 超时被 reject，功能不可用
+   * `sendApi` 支持 per-request `timeout` 参数，历史消息/转发消息接口超时放宽到 300s
+   * 修正超时定时器变量清理（`clearTimeout(timer)`），避免正常返回后定时器仍触发
+
  # 3.1.9
 
  * 修复：日志标识残留 `[TRSSYz]` 未改干净

@@ -19,17 +19,17 @@ Bot.adapter.push(
       return Bot.String(msg).replace(/base64:\/\/.*?(,|]|")/g, "base64://...$1")
     }
 
-    sendApi(data, ws, action, params = {}) {
+    sendApi(data, ws, action, params = {}, timeout = this.timeout) {
       const echo = ulid()
       const request = { action, params, echo }
       ws.sendMsg(request)
       const cache = Promise.withResolvers()
       this.echo.set(echo, cache)
-      const timeout = setTimeout(() => {
-        cache.reject(Bot.makeError("请求超时", request, { timeout: this.timeout }))
+      const timer = setTimeout(() => {
+        cache.reject(Bot.makeError("请求超时", request, { timeout }))
         Bot.makeLog("error", ["请求超时", request], data.self_id)
         // 不掐断连接：单个请求超时不代表连接失效，terminate 会导致其他 pending 请求全部失败
-      }, this.timeout)
+      }, timeout)
 
       return cache.promise
         .then(data => {
@@ -42,7 +42,7 @@ Bot.adapter.push(
             : data
         })
         .finally(() => {
-          clearTimeout(timeout)
+          clearTimeout(timer)
           this.echo.delete(echo)
         })
     }
@@ -202,12 +202,16 @@ Bot.adapter.push(
 
     async getFriendMsgHistory(data, message_seq, count, reverseOrder = true) {
       const msgs = (
-        await data.bot.sendApi("get_friend_msg_history", {
-          user_id: data.user_id,
-          message_seq,
-          count,
-          reverseOrder,
-        })
+        await data.bot.sendApi(
+          "get_friend_msg_history",
+          {
+            user_id: data.user_id,
+            message_seq,
+            count,
+            reverseOrder,
+          },
+          300000,
+        )
       ).data?.messages
 
       for (const i of Array.isArray(msgs) ? msgs : [msgs])
@@ -217,12 +221,16 @@ Bot.adapter.push(
 
     async getGroupMsgHistory(data, message_seq, count, reverseOrder = true) {
       const msgs = (
-        await data.bot.sendApi("get_group_msg_history", {
-          group_id: data.group_id,
-          message_seq,
-          count,
-          reverseOrder,
-        })
+        await data.bot.sendApi(
+          "get_group_msg_history",
+          {
+            group_id: data.group_id,
+            message_seq,
+            count,
+            reverseOrder,
+          },
+          300000,
+        )
       ).data?.messages
 
       for (const i of Array.isArray(msgs) ? msgs : [msgs])
@@ -232,9 +240,13 @@ Bot.adapter.push(
 
     async getForwardMsg(data, message_id) {
       const msgs = (
-        await data.bot.sendApi("get_forward_msg", {
-          message_id,
-        })
+        await data.bot.sendApi(
+          "get_forward_msg",
+          {
+            message_id,
+          },
+          300000,
+        )
       ).data?.messages
 
       for (const i of Array.isArray(msgs) ? msgs : [msgs])
