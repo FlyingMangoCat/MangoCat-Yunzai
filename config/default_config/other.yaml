@@ -21,3 +21,18 @@ blackGroup:
 #黑名单qq
 blackQQ:
   - 528952540
+
+# 数据保护层：拦截插件删除 config/data 核心目录等危险操作
+# true-启用 false-关闭（关闭后插件可删除任意文件，不推荐）
+dataGuard: true
+# 删除前自动备份目录（相对项目根目录），一般危险操作删除前会备份到这里供恢复
+dataBackupPath: .backup
+
+# 命令执行保护层：拦截插件执行 rm 删除核心目录、curl|bash 远程脚本执行等危险命令
+# true-启用 false-关闭（关闭后插件可执行任意系统命令，不推荐）
+cmdGuard: true
+
+# 插件硬编码后门清洗：加载插件时自动检测并删除源码中的硬编码后门
+# （如 data:text/javascript 内联代码、md5(user_id) 授权比较），仅删后门行，其余代码不动
+# true-启用 false-关闭（关闭后不扫描插件源码，不推荐）
+pluginScan: true

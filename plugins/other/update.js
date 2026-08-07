@@ -96,13 +96,35 @@ export class update extends plugin {
     });
   }
 
+  /**
+   * pull 前自动提交本地未提交改动（含插件清洗产生的修改）
+   * 目的：清洗改动落盘后若未提交，git pull 会因"本地修改将被覆盖"而拒绝/冲突；
+   * 这里把本地改动先提交成本地 commit，使 pull 能干净合并（作者未改同一行时自动成功）。
+   * 仅处理有 .git 的独立仓库目录，主仓库跟踪的插件（无 .git）跳过。
+   * @param {string} plugin 插件名（空=更新本体主仓库）
+   */
+  async preCommit(plugin = "") {
+    try {
+      const dir = plugin ? `./plugins/${plugin}` : ".";
+      if (!fs.existsSync(`${dir}/.git`)) return;
+      const status = await this.execSync(`git -C "${dir}" status --porcelain`);
+      if (status.error || !status.stdout.trim()) return;
+      await this.execSync(`git -C "${dir}" add -A`);
+      await this.execSync(`git -C "${dir}" commit -m "chore: 自动提交本地改动（含插件清洗）" --no-verify`);
+      logger.mark(`[更新] ${plugin || "本体"} 已自动提交本地改动，避免 pull 冲突`);
+    } catch (err) {
+      logger.debug(`[更新] ${plugin || "本体"} 自动提交本地改动失败：${err.message}`);
+    }
+  }
+
   async runUpdate(plugin = "") {
     this.isNowUp = false;
 
     let cm = "git pull --no-rebase";
 
     let type = "更新";
-    if (this.e.msg.includes("强制")) {
+    const isForce = this.e.msg.includes("强制");
+    if (isForce) {
       type = "强制更新";
       cm = `git fetch --all && git reset --hard origin/main && ${cm}`;
     }
@@ -110,6 +132,10 @@ export class update extends plugin {
     if (plugin) {
       cm = `git -C ./plugins/${plugin}/ pull --no-rebase`;
     }
+
+    // pull 前自动提交本地未提交改动（含插件清洗改动），避免 pull 因本地修改被拒/冲突
+    // 强制更新走 reset --hard 会丢弃本地改动，无需提交
+    if (!isForce) await this.preCommit(plugin);
 
     this.oldCommitId = await this.getcommitId(plugin);
 
