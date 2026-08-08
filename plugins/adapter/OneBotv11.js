@@ -1026,13 +1026,13 @@ Bot.adapter.push(
         })
         .catch(() => {})
 
-      data.bot.info = (await data.bot.sendApi("get_login_info").catch(i => i.error)).data
+      data.bot.info = (await data.bot.sendApi("get_login_info").catch(() => ({}))).data
       data.bot.guild_info = (
-        await data.bot.sendApi("get_guild_service_profile").catch(i => i.error)
+        await data.bot.sendApi("get_guild_service_profile").catch(() => ({}))
       ).data
-      data.bot.clients = (await data.bot.sendApi("get_online_clients").catch(i => i.error)).clients
+      data.bot.clients = (await data.bot.sendApi("get_online_clients").catch(() => ({}))).clients
       data.bot.version = {
-        ...(await data.bot.sendApi("get_version_info").catch(i => i.error)).data,
+        ...(await data.bot.sendApi("get_version_info").catch(() => ({}))).data,
         id: this.id,
         name: this.name,
         get version() {
@@ -1042,7 +1042,7 @@ Bot.adapter.push(
 
       if (
         (data.bot.cookies["qun.qq.com"] = (
-          await data.bot.sendApi("get_cookies", { domain: "qun.qq.com" }).catch(i => i.error)
+          await data.bot.sendApi("get_cookies", { domain: "qun.qq.com" }).catch(() => ({}))
         ).cookies)
       )
         for (const i of [
@@ -1069,9 +1069,9 @@ Bot.adapter.push(
           data.bot.cookies[domain] = await data.bot
             .sendApi("get_cookies", { domain })
             .then(i => i.cookies)
-            .catch(i => i.error)
+            .catch(() => undefined)
         }
-      data.bot.bkn = (await data.bot.sendApi("get_csrf_token").catch(i => i.error)).token
+      data.bot.bkn = (await data.bot.sendApi("get_csrf_token").catch(() => ({}))).token
 
       data.bot.getFriendMap()
       data.bot.getGroupMemberMap()
