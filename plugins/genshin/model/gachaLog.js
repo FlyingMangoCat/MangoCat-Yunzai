@@ -1112,7 +1112,14 @@ export default class GachaLog extends base {
       return false
     }
 
-    this.uid = gameRole.game_uid
+    // 优先读用户切换的主 uid（与参考内容 getUid 一致：星铁读 _games.sr.uid / 原神读 _games.gs.uid）
+    // 未设置主 uid 时，依次回退 runtime.getUid、cookie 角色列表第一个
+    this.uid =
+      this.e.isSr
+        ? this.e.user?._games?.sr?.uid
+        : this.e.user?._games?.gs?.uid ||
+          (await this.e.runtime?.getUid?.(this.e)) ||
+          gameRole.game_uid
     let region = this.getServer()
 
     this.e.reply(`正在获取抽卡authkey...`)

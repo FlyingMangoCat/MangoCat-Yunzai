@@ -52,7 +52,7 @@ export class gcLog extends plugin {
           fnc: "logCount",
         },
         {
-          reg: "^#*(星铁|崩坏星穹铁道|铁道)?更新抽卡记录$",
+          reg: "#*(星铁|崩坏星穹铁道|铁道)更新抽卡记录",
           fnc: "updateGachaLog",
         },
       ],
