@@ -1,3 +1,36 @@
+ # 3.2.1
+
+ * `稳定性与安全修复`更新
+ * 修复：`sendMasterMsg` 在 `cfg.master` 未定义时崩溃（主人通知）
+   * 新增 `cfg.master` getter，兼容 TRSS 的 `master: {bot_id:[qq]}` 格式，未配置时回退为 `{bot_id: masterQQ}` 结构
+   * `sendMasterMsg` 默认参数加双保险 `Object.keys(cfg.master || {})`
+   * `notifyMaster` 容错：`masterQQ` 未配置时直接返回，不提示不崩溃
+ * 修复：OneBot 连接流程请求超时不再崩溃
+   * 多处 `.catch(i => i.error)` 后直接访问属性（`.data`/`.cookies`/`.token`），超时返回 undefined 时崩溃
+   * 改为 `.catch(() => ({}))` 空对象兜底，超时/失败不崩，正常返回数据照常获取
+ * 修复：清洗/危险操作通报在 Bot 未连接时丢失
+   * `broadcast`/`notifyMaster` 在插件加载阶段（群列表为空/uin 为空）不再静默丢弃
+   * 待补发队列 + 3 秒轮询，连接就绪后自动补发群广播与私信主人，最多等待 2 分钟
+ * 修复：`initCfg` 默认配置缺失时静默重建丢失自定义配置
+   * 目录已存在但默认配置文件缺失（疑似被 git 删除/误删，非全新部署）时打印告警提示检查
+   * logger 未初始化时用 console 兜底打印，确保告警必达
+ * 修复：插件清洗覆盖后安装/热更新路径，确保后门必被清洗
+   * `load()` 每次进入先全量扫描 `plugins/` 目录执行清洗（`scanAllPlugins`），不再因插件列表非空跳过
+   * watch 的 change/add 热更新回调补上清洗，后安装/更新插件也触发
+ * 新增：每次重启后通报插件安全状态
+   * 清洗记录持久化到 `data/pluginScanHistory.json`（保留最近 100 条）
+   * 每次重启后私信主人通报插件安全状态（含历史累计清洗记录），即使本次无新后门也通报
+ * 修复：用户配置文件移出 git 跟踪
+   * `config/config/` 下用户配置文件（bot/group/notice/qq/redis.yaml）移除 git 跟踪，避免本机配置被推送泄露及 pull 冲突
+   * `initCfg` 复制默认配置前先确保 `config/config/` 目录存在（git 不跟踪空目录，新克隆可能缺失）
+ * 修复：`#更新抽卡记录` 指令正则与 uid 取值
+   * 指令正则修正为 `#*(星铁|崩坏星穹铁道|铁道)更新抽卡记录`
+   * `getAuthKeyFromCookie` uid 优先读用户主 uid（星铁 `_games.sr.uid`/原神 `_games.gs.uid`），与 `#uid` 显示一致，cookie 列表兜底
+ * 修复：重启流程 `execve` 失败回退，新进程接管控制台、老进程可靠退出
+   * `execve` 包 try/catch：平台不支持/抛错时记录 warn 并回退常规重启，不再中断流程导致老进程不退出
+   * 前台模式改用 spawn + stdio inherit 启动新进程接管终端，替代 exec 管道方式
+   * `cmdStart` 加 `unref`，新进程独立于旧进程句柄
+
  # 3.2.0 
 
  * `安全防护`更新
