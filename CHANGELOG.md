@@ -67,10 +67,10 @@
 
  # 3.1.9
 
- * 修复：日志标识残留 `[TRSSYz]` 未改干净
-   * `lib/util.js` `makeLogID` 兜底默认值 `TRSSYz` → `FMCYz`
-   * OneBotv11 上报的 `model` 由 `TRSS Yunzai` → `FMCYz`
-   * `#版本` 卡片名称由 `TRSS-Yunzai` → `MangoCat-Yunzai`（version.js 未纳入版本库，需在部署环境同步）
+ * 修复：日志标识残留
+   * `lib/util.js` `makeLogID` 兜底默认值
+   * OneBotv11 上报的 `model`
+   * `#版本` 卡片名称
  * 修复：OneBot 适配器单个请求超时后 `ws.terminate()` 掐断连接，导致其他 pending 请求连锁超时（"请求超时"+"发送消息错误"）
    * 超时只 reject 当前请求，不再断开连接，避免雪崩
  * 修复：迟到的 API 响应（请求已超时、echo 已删除）被误报为"未知消息"刷屏
