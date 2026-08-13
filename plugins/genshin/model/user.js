@@ -353,7 +353,30 @@ export default class User extends base {
     index = Number(index) - 1;
     await user.setMainUid(index, game);
     await user.save();
+    // 同步逍遥插件读取的 data/MysCookie/{qq}.yaml 的 isMain 标记
+    // （逍遥插件 #更新抽卡记录 的 getBingCookie 以 isMain 条目取主 uid，不跟随 genshin _games 切换）
+    this.syncMysCookieMain(user.getUid(game));
     return await this.showUid();
+  }
+
+  /** 同步 data/MysCookie/{qq}.yaml 的 isMain 标记，保证切换 uid 后逍遥插件读到的主 uid 一致 */
+  syncMysCookieMain(uid) {
+    try {
+      let qq = this.e.user_id;
+      let ck = gsCfg.getBingCkSingle(qq);
+      if (lodash.isEmpty(ck)) return;
+      let changed = false;
+      lodash.forEach(ck, (item, itemUid) => {
+        let isMain = String(itemUid) === String(uid);
+        if (!!item.isMain !== isMain) {
+          item.isMain = isMain;
+          changed = true;
+        }
+      });
+      if (changed) gsCfg.saveBingCk(qq, ck);
+    } catch (err) {
+      logger.error(`[切换uid] 同步 MysCookie isMain 失败:`, err);
+    }
   }
 
   /** 加载旧ck */
