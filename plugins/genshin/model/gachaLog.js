@@ -1112,16 +1112,18 @@ export default class GachaLog extends base {
       return false
     }
 
-    // 照参考项目(Miao-Yunzai gcLog.getUid)的取值顺序：
-    // ① 用户切换的主 uid（_games 主 uid，与 #uid 显示同源）
+    // 取值顺序（照参考项目 Miao-Yunzai gcLog.getUid 思路，但用 NoteUser.create 显式读库，
+    // 不依赖 this.e.user 是否已被前置设置——劫持路径下 e.user 可能不可用，避免回退到 redis 旧值）：
+    // ① NoteUser.create(e).getUid(game) → _games[game].uid（切换后的主 uid，与 #uid 图完全同源）
     // ② runtime.getUid 回退（内部走 NoteUser.getUid → 同一 _games 数据源）
     // ③ redis uidKey 回退
     // 不用 cookie 角色列表第一个兜底（那不是用户切换的主 uid，会取错）
-    this.uid = this.e.isSr
-      ? this.e.user?._games?.sr?.uid
-      : this.e.user?._games?.gs?.uid ||
-        (await this.e.runtime?.getUid?.(this.e)) ||
-        (await redis.get(this.uidKey))
+    const { default: NoteUser } = await import("./mys/NoteUser.js");
+    const noteUser = this.e.user || (await NoteUser.create(this.e));
+    this.uid =
+      noteUser.getUid(this.e.isSr ? "sr" : "gs") ||
+      (await this.e.runtime?.getUid?.(this.e)) ||
+      (await redis.get(this.uidKey))
     let region = this.getServer()
 
     this.e.reply(`正在获取抽卡authkey...`)
