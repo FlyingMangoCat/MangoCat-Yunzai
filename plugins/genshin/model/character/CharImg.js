@@ -19,7 +19,8 @@ const liulianImgMap = {
 const liulianSrMap = {
   face: '星铁/role',
   qFace: '星铁/role',
-  splash: '星铁/side',
+  splash: '星铁/splash',
+  preview: '星铁/side',
 }
 
 // 星铁开拓者变体 → liulian 星铁/role 中的图片名(星/穹 两种形态,按命途区分)
