@@ -60,7 +60,7 @@ export default class User extends base {
 
     if (!param.cookie_token && !param.cookie_token_v2) {
       await this.e.reply(
-        "发送cookie不完整\n请退出米游社【重新登录】，刷新完整cookie",
+        `发送cookie不完整\n请退出米游社【重新登录】，刷新完整cookie\n或发送【#扫码登录】扫码一键登录绑定，更便捷`,
       );
       return;
     }
@@ -96,7 +96,7 @@ export default class User extends base {
     /** 检查ck是否失效 */
     if (!(await this.checkCk(param))) {
       logger.mark(`绑定cookie错误：${this.checkMsg || "cookie错误"}`);
-      await this.e.reply(`绑定cookie失败：${this.checkMsg || "cookie错误"}`);
+      await this.e.reply(`绑定cookie失败：${this.checkMsg || "cookie错误"}\n或发送【#扫码登录】扫码一键登录绑定，更便捷`);
       return;
     }
 
@@ -110,7 +110,7 @@ export default class User extends base {
       } else {
         logger.mark(`绑定cookie错误：${userFullInfo.message || "cookie错误"}`);
         await this.e.reply(
-          `绑定cookie失败：${userFullInfo.message || "cookie错误"}`,
+          `绑定cookie失败：${userFullInfo.message || "cookie错误"}\n或发送【#扫码登录】扫码一键登录绑定，更便捷`,
         );
         return;
       }
@@ -131,7 +131,7 @@ export default class User extends base {
       if (uidRet.status !== 0) {
         logger.mark(`绑定cookie错误：${uidRet.msg || "cookie错误"}`)
         mys._delCache()
-        return await this.e.reply(`绑定cookie失败：${uidRet.msg || "cookie错误"}`)
+        return await this.e.reply(`绑定cookie失败：${uidRet.msg || "cookie错误"}\n或发送【#扫码登录】扫码一键登录绑定，更便捷`)
       }
 
       await user.addMysUser(mys)

@@ -28,7 +28,7 @@ export default class MysSign extends base {
 
     if (lodash.isEmpty(ck)) {
       e.reply(
-        "无法签到，请先#绑定cookie\n发送【cookie帮助】查看配置教程",
+        "无法签到，请先#绑定cookie\n发送【cookie帮助】查看配置教程\n或发送【#扫码登录】扫码一键登录绑定，更便捷",
         false,
         { at: true },
       );
@@ -399,7 +399,7 @@ export default class MysSign extends base {
 
     if (lodash.isEmpty(ck)) {
       await this.e.reply(
-        `${model}签到失败，请先#绑定cookie\n发送【cookie帮助】查看配置教程`,
+        `${model}签到失败，请先#绑定cookie\n发送【cookie帮助】查看配置教程\n或发送【#扫码登录】扫码一键登录绑定，更便捷`,
         false,
         { at: true },
       );
