@@ -104,9 +104,14 @@ export default class Player extends Base {
     }
     let cwd = process.cwd().replace(/\\/g, '/')
     let fileName = CharImg.findImg(`${cwd}/plugins/liulian-plugin/resources/genshin/logo/role`, avatarName)
+    /** 按角色取名片 banner,未找到则回退公共 banner */
+    let banner = `/meta-${this.game}/character/common/imgs/banner.webp`
+    if (avatarName && fs.existsSync(`${cwd}/plugins/genshin/resources/meta-gs/banner/${avatarName}.webp`)) {
+      banner = `/meta-gs/banner/${avatarName}.webp`
+    }
     return {
       face: fileName ? `../../liulian-plugin/resources/genshin/logo/role/${fileName}` : '/common/item/face.webp',
-      banner: `/meta-${this.game}/character/common/imgs/banner.webp`
+      banner
     }
   }
 
