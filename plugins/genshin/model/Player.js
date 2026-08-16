@@ -9,6 +9,7 @@ import lodash from 'lodash'
 import fs from 'node:fs'
 import path from 'node:path'
 import Base from './MiaoBase.js'
+import CharImg from './character/CharImg.js'
 import { zzzroleId, roleId, starroleId } from '../../liulian-plugin/config/roleId.js'
 
 const playerDataDir = path.join(process.cwd(), 'data', 'PlayerData')
@@ -80,24 +81,31 @@ export default class Player extends Base {
       }
     }
     if (this.game === 'zzz') {
+      let cwd = process.cwd().replace(/\\/g, '/')
+      let fileName = CharImg.findImg(`${cwd}/plugins/liulian-plugin/resources/zzz/gacha`, avatarName)
       return {
-        face: avatarName ? `../../liulian-plugin/resources/zzz/gacha/${avatarName}.png` : '/common/item/face.webp',
+        face: fileName ? `../../liulian-plugin/resources/zzz/gacha/${fileName}` : '/common/item/face.webp',
         banner: '/ZZZero/img/other/banner.png'
       }
     }
     if (this.game === 'sr') {
       let cwd = process.cwd().replace(/\\/g, '/')
-      let relPath = `../../liulian-plugin/resources/星铁/role/${avatarName}`
-      if (avatarName && fs.existsSync(`${cwd}/plugins/liulian-plugin/resources/星铁/role/${avatarName}.webp`)) {
-        return { face: `${relPath}.webp`, banner: `/meta-${this.game}/character/common/imgs/banner.webp` }
+      let fileName = ''
+      for (let n of CharImg.getSrImgNames(avatarName)) {
+        fileName = CharImg.findImg(`${cwd}/plugins/liulian-plugin/resources/星铁/role`, n)
+        if (fileName) {
+          break
+        }
       }
-      if (avatarName && fs.existsSync(`${cwd}/plugins/liulian-plugin/resources/星铁/role/${avatarName}.png`)) {
-        return { face: `${relPath}.png`, banner: `/meta-${this.game}/character/common/imgs/banner.webp` }
+      return {
+        face: fileName ? `../../liulian-plugin/resources/星铁/role/${fileName}` : '/common/item/face.webp',
+        banner: `/meta-${this.game}/character/common/imgs/banner.webp`
       }
-      return { face: '/common/item/face.webp', banner: `/meta-${this.game}/character/common/imgs/banner.webp` }
     }
+    let cwd = process.cwd().replace(/\\/g, '/')
+    let fileName = CharImg.findImg(`${cwd}/plugins/liulian-plugin/resources/genshin/logo/role`, avatarName)
     return {
-      face: avatarName ? `../../liulian-plugin/resources/genshin/logo/role/${avatarName}.png` : '/common/item/face.webp',
+      face: fileName ? `../../liulian-plugin/resources/genshin/logo/role/${fileName}` : '/common/item/face.webp',
       banner: `/meta-${this.game}/character/common/imgs/banner.webp`
     }
   }

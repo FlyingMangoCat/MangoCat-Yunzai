@@ -92,8 +92,15 @@
   </body>
   <script type="text/javascript">
     function whenError(a, type) {
-      // a.onerror = null;
-      // a.src = "{{pluResPath}}img/" + type + "/荧.png";
+      // 多格式回退:按 png -> webp -> jpg 依次尝试
+      let src = a.getAttribute('src') || ''
+      if (/\.png(\?|$)/.test(src)) {
+        a.src = src.replace(/\.png(\?|$)/, '.webp$1')
+      } else if (/\.webp(\?|$)/.test(src)) {
+        a.src = src.replace(/\.webp(\?|$)/, '.jpg$1')
+      } else {
+        a.onerror = null
+      }
     }
   </script>
 </html>

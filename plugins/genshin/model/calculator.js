@@ -3,6 +3,7 @@ import MysInfo from "./mys/mysInfo.js";
 import MysApi from "./mys/mysApi.js";
 import lodash from "lodash";
 import gsCfg from "./gsCfg.js";
+import CharImg from "./character/CharImg.js";
 
 export default class Calculator extends base {
   constructor(e) {
@@ -118,10 +119,13 @@ export default class Calculator extends base {
 
       let four = gsCfg.getdefSet("role", "other").four;
 
+      let cwd = process.cwd().replace(/\\/g, '/')
+      let roleIcon = CharImg.findImg(`${cwd}/plugins/liulian-plugin/resources/genshin/logo/role`, this.role.name)
+
       this.dataCharacter = {
         level: 1,
         name: this.role.name,
-        icon: `../../liulian-plugin/resources/genshin/logo/role/${this.role.name}.png`,
+        icon: roleIcon ? `../../liulian-plugin/resources/genshin/logo/role/${roleIcon}` : '',
         rarity: four.includes(Number(this.role.roleId)) ? 4 : 5,
       };
     }

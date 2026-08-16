@@ -40,7 +40,7 @@
               <div class="name_cont star{{avatar.rarity}}">
                 <div class="name">
                   <div class="avatar_img">
-                    <img src="{{liulianResPath}}genshin/logo/role/{{avatar.name}}.png"/>
+                    <img src="{{liulianResPath}}genshin/logo/role/{{avatar.name}}.png" onerror="whenError(this,'role')"/>
                   </div>
                   <div class="avatar_name">
                     {{abbr[avatar.name] || avatar.name}}
@@ -60,7 +60,7 @@
                   <span class="weapon_lv">Lv{{avatar.weapon_level}}</span>
 
                   <span class="weapon_alv weapon_alv_{{avatar.weapon_affix_level}}">{{avatar.weapon_affix_level}}</span>
-                  <img src="{{pluResPath}}img/weapon/{{avatar.weapon_name}}.png"/>
+                  <img src="{{pluResPath}}img/weapon/{{avatar.weapon_name}}.png" onerror="whenError(this)"/>
                   <span class="weapon_name">{{abbr[avatar.weapon_name] || avatar.weapon_name}}</span>
                 </div>
                 {{/if}}
@@ -84,4 +84,22 @@
     </div>
 
   </body>
+<script type="text/javascript">
+  function whenError(a, type) {
+    // 多格式回退:png/webp/jpg 依次尝试
+    let src = a.getAttribute('src') || ''
+    let m = src.match(/\.(png|webp|jpg)$/)
+    if (!m) { a.onerror = null; return }
+    let tried = (a.dataset.tried || '').split(',').filter(Boolean)
+    tried.push(m[1])
+    a.dataset.tried = tried.join(',')
+    for (let ext of ['png', 'webp', 'jpg']) {
+      if (!tried.includes(ext)) {
+        a.src = src.replace(/\.(png|webp|jpg)$/, '.' + ext)
+        return
+      }
+    }
+    a.onerror = null
+  }
+</script>
 </html>

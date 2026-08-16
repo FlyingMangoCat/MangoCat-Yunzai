@@ -172,11 +172,20 @@
   </body>
   <script type="text/javascript">
     function whenError(a,type) {
-      // if(!type){
-      //   type = "role"
-      // }
-      // a.onerror = null;
-      // a.src = "{{pluResPath}}img/"+type+"/荧.png";
+      // 多格式回退:png/webp/jpg 依次尝试
+      let src = a.getAttribute('src') || ''
+      let m = src.match(/\.(png|webp|jpg)$/)
+      if (!m) { a.onerror = null; return }
+      let tried = (a.dataset.tried || '').split(',').filter(Boolean)
+      tried.push(m[1])
+      a.dataset.tried = tried.join(',')
+      for (let ext of ['png', 'webp', 'jpg']) {
+        if (!tried.includes(ext)) {
+          a.src = src.replace(/\.(png|webp|jpg)$/, '.' + ext)
+          return
+        }
+      }
+      a.onerror = null
     }
   </script>
 </html>

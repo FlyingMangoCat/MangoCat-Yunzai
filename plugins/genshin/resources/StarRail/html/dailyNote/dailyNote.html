@@ -18,7 +18,7 @@
             </div>
             <div class="title_date">
                 <div class="icon">
-                    <img src="{{pluResPath}}StarRail/img/role/{{icon}}.webp" />
+                    <img src="{{pluResPath}}StarRail/img/role/{{icon}}.webp" onerror="whenError(this)" />
                 </div>
                 <div class="title_date_text">
                     <div>{{nowDay}}</div>
@@ -51,7 +51,7 @@
                     <div class="bottom_icon">
                         {{each ex.avatars avatars}}
                         {{if avatars=='派遣头像'}}
-                        <div><img src="{{pluResPath}}StarRail/img/role/{{avatars}}.webp" alt=""></div>
+                        <div><img src="{{pluResPath}}StarRail/img/role/{{avatars}}.webp" alt="" onerror="whenError(this)"></div>
                         {{else}}
                         <div><img src="{{avatars}}" alt=""></div>
                         {{/if}}
@@ -68,5 +68,22 @@
     </div>
     </div>
 </body>
-
+<script type="text/javascript">
+  function whenError(a, type) {
+    // 多格式回退:png/webp/jpg 依次尝试
+    let src = a.getAttribute('src') || ''
+    let m = src.match(/\.(png|webp|jpg)$/)
+    if (!m) { a.onerror = null; return }
+    let tried = (a.dataset.tried || '').split(',').filter(Boolean)
+    tried.push(m[1])
+    a.dataset.tried = tried.join(',')
+    for (let ext of ['png', 'webp', 'jpg']) {
+      if (!tried.includes(ext)) {
+        a.src = src.replace(/\.(png|webp|jpg)$/, '.' + ext)
+        return
+      }
+    }
+    a.onerror = null
+  }
+</script>
 </html>

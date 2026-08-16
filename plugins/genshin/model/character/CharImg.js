@@ -21,7 +21,39 @@ const liulianSrMap = {
   qFace: '星铁/role',
   splash: '星铁/side',
 }
+
+// 星铁开拓者变体 → liulian 星铁/role 中的图片名(星/穹 两种形态,按命途区分)
+const srTrailblazerMap = {
+  '开拓者': ['星', '穹'],
+  '物理开拓者': ['星·毁灭', '穹·毁灭'],
+  '火开拓者': ['星·存护', '穹·存护'],
+  '虚数开拓者': ['星·同谐', '穹·同谐'],
+  '记忆开拓者': ['星·记忆', '穹·记忆'],
+}
+
 const CharImg = {
+
+  // 在资源目录下按名称查找图片文件,兼容多种格式(返回完整文件名,找不到返回 '')
+  findImg (dir, name, exts = ['.png', '.webp', '.jpg']) {
+    if (!dir || !name) {
+      return ''
+    }
+    for (const ext of exts) {
+      if (fs.existsSync(`${dir}/${name}${ext}`)) {
+        return `${name}${ext}`
+      }
+    }
+    return ''
+  },
+
+  // 获取星铁开拓者变体对应的候选图片名(含自身,兼容星/穹两种形态)
+  getSrImgNames (name) {
+    let names = [name]
+    if (srTrailblazerMap[name]) {
+      names = names.concat(srTrailblazerMap[name])
+    }
+    return names
+  },
 
   // 获取角色的插画
   getCardImg (names, se = false, def = true) {
@@ -161,9 +193,14 @@ const CharImg = {
       // 尝试从 liulian-plugin 资源目录获取
       if (!imgs[key] && liulianSrMap[key]) {
         const liuDir = `${liulianRoot}/${liulianSrMap[key]}`
-        for (const ext of ['.png', '.webp', '.jpg']) {
-          if (fs.existsSync(`${liuDir}/${name}${ext}`)) {
-            imgs[key] = `../../liulian-plugin/resources/${liulianSrMap[key]}/${name}${ext}`
+        for (let n of CharImg.getSrImgNames(name)) {
+          for (const ext of ['.png', '.webp', '.jpg']) {
+            if (fs.existsSync(`${liuDir}/${n}${ext}`)) {
+              imgs[key] = `../../liulian-plugin/resources/${liulianSrMap[key]}/${n}${ext}`
+              break
+            }
+          }
+          if (imgs[key]) {
             break
           }
         }

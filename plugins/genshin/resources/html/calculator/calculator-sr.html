@@ -25,7 +25,7 @@
 						{{dataCharacter.rank}}命</span>
 					{{/if}}
 					<div class="bg{{dataCharacter.rarity}}">
-						<img class="role_img" src="{{liulianResPath}}星铁/role/{{dataCharacter.name}}.webp" onerror="this.src='{{liulianResPath}}星铁/role/{{dataCharacter.name}}.png'" />
+						<img class="role_img" src="{{liulianResPath}}星铁/role/{{dataCharacter.name}}.webp" onerror="whenError(this)" />
 					</div>
 
 				</div>
@@ -131,4 +131,22 @@
 	</div>
 	<div class="logo">Created By MangoCat-Yunzai</div>
 </body>
+<script type="text/javascript">
+  function whenError(a, type) {
+    // 多格式回退:png/webp/jpg 依次尝试
+    let src = a.getAttribute('src') || ''
+    let m = src.match(/\.(png|webp|jpg)$/)
+    if (!m) { a.onerror = null; return }
+    let tried = (a.dataset.tried || '').split(',').filter(Boolean)
+    tried.push(m[1])
+    a.dataset.tried = tried.join(',')
+    for (let ext of ['png', 'webp', 'jpg']) {
+      if (!tried.includes(ext)) {
+        a.src = src.replace(/\.(png|webp|jpg)$/, '.' + ext)
+        return
+      }
+    }
+    a.onerror = null
+  }
+</script>
 </html>

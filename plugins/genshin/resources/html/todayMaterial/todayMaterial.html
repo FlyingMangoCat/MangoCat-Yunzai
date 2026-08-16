@@ -73,7 +73,7 @@
             {{each temp.list val}}
             <div class="weapon_item">
               <span class="weapon_user">
-                <img class="user_img" src="{{liulianResPath}}genshin/logo/role/{{val.role_name}}.png"/>
+                <img class="user_img" src="{{liulianResPath}}genshin/logo/role/{{val.role_name}}.png" onerror="whenError(this)"/>
               </span>
               <div class="weapon_role_box">
                 {{ if val.affix_level>1}}
@@ -100,8 +100,20 @@
   </body>
   <script type="text/javascript">
     function whenError(a) {
-      // a.onerror = null;
-      // a.src = "{{_res_path}}/genshin/logo/role/荧.png";
+      // 多格式回退:png/webp/jpg 依次尝试
+      let src = a.getAttribute('src') || ''
+      let m = src.match(/\.(png|webp|jpg)$/)
+      if (!m) { a.onerror = null; return }
+      let tried = (a.dataset.tried || '').split(',').filter(Boolean)
+      tried.push(m[1])
+      a.dataset.tried = tried.join(',')
+      for (let ext of ['png', 'webp', 'jpg']) {
+        if (!tried.includes(ext)) {
+          a.src = src.replace(/\.(png|webp|jpg)$/, '.' + ext)
+          return
+        }
+      }
+      a.onerror = null
     }
   </script>
 </html>
