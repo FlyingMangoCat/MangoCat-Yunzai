@@ -86,6 +86,11 @@ export default class apiTool {
           url: `${hostRecord}game_record/app/genshin/api/character/list`,
           body: { role_id: this.uid, server: this.server },
         },
+        /** 角色面板 */
+        characterDetail: {
+          url: `${hostRecord}game_record/app/genshin/api/character/detail`,
+          body: { role_id: this.uid, server: this.server, character_ids: data.character_ids },
+        },
         /** 树脂 */
         dailyNote: {
           url: `${hostRecord}game_record/app/genshin/api/dailyNote`,
@@ -215,12 +220,17 @@ export default class apiTool {
          */
         ys_ledger: {
           url: `${host}/event/srledger/month_info`,
-          query: `region=${this.server}&uid=${this.uid}&month=${data.month}`,
+          query: `lang=zh-cn&region=${this.server}&uid=${this.uid}&month=${data.month}`,
+        },
+        /** 角色面板 */
+        avatarInfo: {
+          url: `${hostRecord}game_record/app/hkrpg/api/avatar/info`,
+          query: `need_wiki=true&role_id=${this.uid}&server=${this.server}`,
         },
         /** 角色详情 */
         character: {
-          url: `${hostRecord}game_record/app/hkrpg/api/avatar/info`,
-          body: { role_id: this.uid, server: this.server },
+          url: `${hostRecord}game_record/app/hkrpg/api/avatar/basic`,
+          query: `role_id=${this.uid}&server=${this.server}`,
         },
         /** 树脂 */
         dailyNote: {
