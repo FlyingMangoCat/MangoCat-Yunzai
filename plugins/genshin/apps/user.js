@@ -38,7 +38,7 @@ export class user extends plugin {
           fnc: "delCk",
         },
         {
-          reg: "^#绑定(uid|UID)?(\\s)*[1-9][0-9]{8}$",
+          reg: "^#绑定(uid|UID)?(\\s)*[1-9][0-9]{8,9}$",
           fnc: "bingUid",
         },
         {
