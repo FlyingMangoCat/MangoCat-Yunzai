@@ -905,6 +905,7 @@ Bot.adapter.push(
         getForwardMsg: this.getForwardMsg.bind(this, i),
         sendForwardMsg: this.sendGroupForwardMsg.bind(this, i),
         sendFile: (file, name) => this.sendGroupFile(i, file, undefined, name),
+        getFileUrl: (file_id, busid) => this.getGroupFileUrl(i, file_id, busid),
         getInfo: this.getGroupInfo.bind(this, i),
         getAvatarUrl() {
           return this.avatar || `https://p.qlogo.cn/gh/${group_id}/${group_id}/0`
