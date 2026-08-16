@@ -104,7 +104,7 @@ export class gcLog extends plugin {
 
   accept() {
     if (this.e.file && this.e.isPrivate) {
-      let name = this.e.file?.name;
+      let name = this.e.file?.name || "";
       if (name.includes("txt")) {
         this.e.msg = "#txt日志文件导入记录";
         if (name.includes("output")) return true;
@@ -146,7 +146,7 @@ export class gcLog extends plugin {
       return true;
     }
 
-    if (!this.e.file || !this.e.file.name.includes("txt")) {
+    if (!this.e.file || !(this.e.file.name || "").includes("txt")) {
       await this.e.reply("请发送日志文件");
     } else {
       await this.e.reply(
