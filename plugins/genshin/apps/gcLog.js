@@ -261,14 +261,22 @@ export class gcLog extends plugin {
     ]);
   }
 
-  /** #星铁更新抽卡记录 — 通过已绑定的cookie自动获取authkey更新抽卡记录 */
+  /** #星铁更新抽卡记录 — 优先使用用户发送的抽卡链接,无则自动获取 */
   async updateGachaLog() {
     let gachaLog = new GachaLog(this.e);
-    let ok = await gachaLog.getAuthKeyFromCookie();
-    if (!ok) return;
 
-    /** 获取authkey成功，开始更新各卡池记录 */
-    this.e.reply("链接获取成功，数据获取中……");
+    /** 解析 uid,判断是否已有用户发送的链接 */
+    await gachaLog.resolveUid()
+    let useUserLink = await gachaLog.hasUserLink()
+
+    /** 无用户链接时才自动获取,避免覆盖用户发送的链接 */
+    if (!useUserLink) {
+      let ok = await gachaLog.getAuthKeyFromCookie();
+      if (!ok) return;
+      this.e.reply("链接获取成功，数据获取中……");
+    } else {
+      this.e.reply("检测到您发送的抽卡链接，使用该链接更新记录...");
+    }
 
     gachaLog.fetchFullLog = await gachaLog.isFetchFullLog();
 
@@ -283,11 +291,30 @@ export class gcLog extends plugin {
       }
       if (i <= 1) await common.sleep(500);
     }
+
+    /** 用户链接更新失败:再尝试自动获取兜底 */
+    if (!tmpMsg && useUserLink) {
+      this.e.reply("您发送的抽卡链接已失效或过期，尝试自动获取authkey...");
+      let ok = await gachaLog.getAuthKeyFromCookie();
+      if (ok) {
+        tmpMsg = "";
+        for (let i in gachaLog.pool) {
+          gachaLog.type = gachaLog.pool[i].type;
+          gachaLog.typeName = gachaLog.pool[i].typeName;
+          let res = await gachaLog.updateLog();
+          if (res) {
+            tmpMsg += `[${gachaLog.typeName}]记录获取成功，更新${res.num}条\n`;
+          }
+          if (i <= 1) await common.sleep(500);
+        }
+      }
+    }
+
     /** 所有卡池都更新失败：明确提示，不再假成功 */
     if (!tmpMsg) {
       this.e.reply(
         this.e.isSr
-          ? "抽卡记录更新失败：星铁无法通过cookie自动获取authkey（官方接口限制），请打开游戏→跃迁记录页面→复制链接发送"
+          ? "抽卡记录更新失败：星铁无法通过cookie自动获取authkey（官方接口限制），请打开游戏→跃迁记录页面→复制链接，私聊发送给我"
           : "抽卡记录更新失败：authkey无效或已过期，请重新绑定cookie后重试",
         false,
         { at: true },

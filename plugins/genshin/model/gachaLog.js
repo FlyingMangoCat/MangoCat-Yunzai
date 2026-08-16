@@ -207,12 +207,38 @@ export default class GachaLog extends base {
 
       /** 保存authkey */
       await redis.setEx(`${this.urlKey}${this.uid}`, 86400, param.authkey)
+      /** 标记来源：用户发送的链接，更新时优先使用 */
+      await redis.setEx(`${this.urlKey}${this.uid}:src`, 3600 * 24 * 30, "user")
 
       return true
     } else {
       await this.e.reply("暂无数据，请等待记录后再查询")
       return false
     }
+  }
+
+  // 获取抽卡链接来源标记(user=用户发送 / auto=自动获取 / ''=无)
+  async getLinkSource() {
+    if (!this.uid) return ""
+    return (await redis.get(`${this.urlKey}${this.uid}:src`)) || ""
+  }
+
+  // 是否存在用户发送的抽卡链接(更新时优先使用,避免自动获取覆盖)
+  async hasUserLink() {
+    if (!this.uid) return false
+    if ((await this.getLinkSource()) !== "user") return false
+    return !!(await redis.get(`${this.urlKey}${this.uid}`))
+  }
+
+  // 解析 uid(与 getAuthKeyFromCookie 相同取值顺序,供更新前判断链接来源)
+  async resolveUid() {
+    const { default: NoteUser } = await import("./mys/NoteUser.js");
+    const noteUser = this.e.user || (await NoteUser.create(this.e));
+    this.uid =
+      noteUser.getUid(this.e.isSr ? "sr" : "gs") ||
+      (await this.e.runtime?.getUid?.(this.e)) ||
+      (await redis.get(this.uidKey))
+    return this.uid
   }
 
   async logApi(param) {
@@ -1195,6 +1221,8 @@ export default class GachaLog extends base {
 
     /** 保存 authkey 到 Redis（有效期24小时） */
     await redis.setEx(`${this.urlKey}${this.uid}`, 86400, authkey)
+    /** 标记来源：自动获取 */
+    await redis.setEx(`${this.urlKey}${this.uid}:src`, 3600 * 24 * 30, "auto")
     await redis.setEx(this.uidKey, 3600 * 24 * 30, String(this.uid))
 
     this.e.reply(`authkey获取成功，UID:${this.uid}，开始更新抽卡记录...`)
