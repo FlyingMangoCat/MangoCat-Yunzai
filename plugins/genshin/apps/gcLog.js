@@ -4,6 +4,8 @@ import common from "../../../lib/common/common.js";
 import GachaLog from "../model/gachaLog.js";
 import ExportLog from "../model/exportLog.js";
 import LogCount from "../model/logCount.js";
+import fetch from "node-fetch";
+import moment from "moment";
 
 const _path = process.cwd() + "/plugins/genshin";
 
@@ -55,10 +57,20 @@ export class gcLog extends plugin {
           reg: "#*(星铁|崩坏星穹铁道|铁道)更新抽卡记录",
           fnc: "updateGachaLog",
         },
+        {
+          reg: "^#?(获取|更新)(提瓦特)?小助手(抽卡|祈愿)?(记录|历史)( *|(\r|\n)*)(https.*)?",
+          fnc: "updateAssistGachaLog",
+        },
       ],
     });
 
     this.androidUrl = "docs.qq.com/doc/DUWpYaXlvSklmVXlX";
+    this.assistTypeName = {
+      301: "角色",
+      302: "武器",
+      500: "集录",
+      200: "常驻",
+    };
     this._path = process.cwd().replace(/\\/g, "/");
     Object.defineProperty(this, "button", {
       get() {
@@ -331,4 +343,134 @@ export class gcLog extends plugin {
       await gachaLog.setFetchFullLog(false);
     }
   }
+
+  /** #更新小助手抽卡记录 — 通过提瓦特小助手(lelaer)获取并合并到本地 */
+  async updateAssistGachaLog() {
+    let gachaLog = new GachaLog(this.e)
+    /** 解析uid */
+    await gachaLog.resolveUid()
+    if (!gachaLog.uid) {
+      await this.e.reply("请先绑定UID")
+      return true
+    }
+
+    let authkey = ""
+    /** 带链接:解析并验证 */
+    let ret = /https.*/.exec(this.e.msg)
+    if (ret) {
+      this.e.msg = ret[0]
+      let param = gachaLog.dealUrl(this.e.msg)
+      if (!param) return true
+      if (!(await gachaLog.checkUrl(param))) return true
+      authkey = param.authkey
+      this.e.region = param.region
+    } else {
+      /** 无链接:redis 取 authkey */
+      authkey = await redis.get(`${gachaLog.urlKey}${gachaLog.uid}`)
+      if (!authkey) {
+        /** 尝试自动获取 */
+        let ok = await gachaLog.getAuthKeyFromCookie()
+        if (!ok) {
+          await this.e.reply("请私聊发送抽卡记录链接", false, { at: true })
+          this.setContext("updateAssistGachaLog")
+          return true
+        }
+        authkey = await redis.get(`${gachaLog.urlKey}${gachaLog.uid}`)
+      }
+      if (!authkey) {
+        await this.e.reply("请私聊发送抽卡记录链接", false, { at: true })
+        this.setContext("updateAssistGachaLog")
+        return true
+      }
+      this.e.region = gachaLog.getServer()
+    }
+
+    /** 验证 authkey 有效 */
+    let res = await gachaLog.logApi({ gacha_type: 301, authkey, region: this.e.region })
+    if (res.retcode !== 0 || !res?.data?.list || res.data.list.length <= 0) {
+      await this.e.reply("请私聊发送抽卡记录链接", false, { at: true })
+      this.setContext("updateAssistGachaLog")
+      return true
+    }
+
+    /** 构造 gachaURL 并请求 lelaer */
+    let gachaURL = encodeURIComponent(`https://hk4e-api.mihoyo.com/event/gacha_info/api/getGachaLog?authkey_ver=1&sign_type=2&auth_appid=webview_gacha&init_type=301&gacha_id=fecafa7b6560db5f3182222395d88aaa6aaac1bc&timestamp=${Math.floor(Date.now() / 1000)}&lang=zh-cn&device_type=mobile&plat_type=ios&region=${this.e.region}&authkey=${encodeURIComponent(authkey)}&game_biz=hk4e_cn&gacha_type=301&page=1&size=5&end_id=0`)
+    let url = "https://www.lelaer.com/outputGacha.php"
+    let body = `uid=${gachaLog.uid}&gachaurl=${gachaURL}&lang=zh-Hans`
+    let param = {
+      headers: {
+        "Host": "www.lelaer.com",
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      timeout: 10000,
+      method: "post",
+      body: body
+    }
+    let response = await fetch(url, param)
+    let json = await response.json()
+    let list = json?.list
+    if (!json || !list) {
+      await this.e.reply(`更新失败 ${json?.result}`)
+      return true
+    }
+    if (!list?.length || list?.length <= 0) {
+      await this.e.reply("「提瓦特小助手」抽卡记录为空")
+      return true
+    }
+    let data = dealJson(list, this.e)
+    if (!data) return true
+
+    /** 合并写回(读本地 → 内存合并 → 写回,不破坏本地) */
+    let msg = []
+    for (let type in data) {
+      if (!this.assistTypeName[type]) continue
+      gachaLog.type = type
+      gachaLog.typeName = this.assistTypeName[type]
+      let log = gachaLog.readJson()
+      let finalJson = mergeJson(log.list, data[type])
+      gachaLog.writeJson(finalJson)
+      msg.push(`[${this.assistTypeName[type]}]记录：${data[type].length}条，现共${finalJson.length}条`)
+    }
+    msg.push("导入成功")
+    await this.e.reply(msg.join("\n"))
+    return true
+  }
+}
+
+/** 小助手记录按卡池分组 */
+function dealJson(list, e) {
+  let data = {}
+
+  /** 必要字段 */
+  let reqField = ["gacha_type", "item_type", "name", "time"]
+
+  for (let v of reqField) {
+    if (!list[0][v]) {
+      e.reply(`json文件内容错误：缺少必要字段${v}`)
+      return false
+    }
+  }
+
+  /** 倒序 */
+  if (moment(list[0].time).format("x") < moment(list[list.length - 1].time).format("x")) {
+    list = list.reverse()
+  }
+
+  for (let v of list) {
+    if (!data[v.uigf_gacha_type]) data[v.uigf_gacha_type] = []
+    data[v.uigf_gacha_type].push(v)
+  }
+
+  return data
+}
+
+/** 合并去重(纯内存,不直接修改本地) */
+function mergeJson(json, jsonNew) {
+  function unique(arr) {
+    const res = new Map()
+    return arr.filter((a) => !res.has(a.id) && res.set(a.id, 1))
+  }
+  return unique(json.concat(jsonNew)).sort((a, b) => {
+    return Number(b.id) - Number(a.id)
+  })
 }
