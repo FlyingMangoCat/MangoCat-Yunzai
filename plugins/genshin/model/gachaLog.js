@@ -327,6 +327,11 @@ export default class GachaLog extends base {
     /** key过期，或者没有数据 */
     if (res.retcode !== 0 || !res?.data?.list || res.data.list.length <= 0) {
       logger.debug(`${this.e.logFnc} ${res.message || "error"}`)
+      /** authkey 明确失效(接口报错)时清理缓存,下次强制重新获取 */
+      if (res.retcode !== 0) {
+        await redis.del(`${this.urlKey}${this.uid}`)
+        await redis.del(`${this.urlKey}${this.uid}:src`)
+      }
       return false
     }
 

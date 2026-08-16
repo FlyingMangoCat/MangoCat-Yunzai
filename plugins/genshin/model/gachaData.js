@@ -7,6 +7,9 @@ import fs from "node:fs";
 
 let imgFile = {};
 
+/** 用户抽卡数据缓存结构版本,结构变更时递增,版本不符自动重建 */
+const GACHA_DATA_VERSION = 2
+
 export default class GachaData extends base {
   /**
    * @param e oicq 消息e
@@ -143,6 +146,13 @@ export default class GachaData extends base {
 
     if (user) {
       user = JSON.parse(user);
+      /** 结构版本不符,丢弃重建(旧缓存可能结构不兼容) */
+      if (user.v !== GACHA_DATA_VERSION) {
+        user = null
+      }
+    }
+
+    if (user) {
       /** 重置今日数据 */
       if (this.getNow() > user.today.expire) {
         user.today = {
@@ -170,6 +180,7 @@ export default class GachaData extends base {
         },
         today: { star: [], expire: this.getEnd().end4, num: 0, weaponNum: 0 },
         week: { num: 0, expire: this.getWeekEnd() },
+        v: GACHA_DATA_VERSION,
       };
     }
 
@@ -500,7 +511,7 @@ export default class GachaData extends base {
 
   async saveUser() {
     this.user.today.expire = this.getEnd().end4;
-    await redis.setEx(this.key, 3600 * 24 * 14, JSON.stringify(this.user));
+    await redis.setEx(this.key, 3600 * 24 * 14, JSON.stringify({ ...this.user, v: GACHA_DATA_VERSION }));
   }
 
   static async getStr() {

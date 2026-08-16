@@ -130,6 +130,8 @@ export default class MysApi {
       response = await fetch(url, param);
     } catch (error) {
       logger.error(error.toString());
+      /** 失败即清理,避免下次继续命中旧缓存 */
+      await redis.del(cacheKey);
       return false;
     }
 
@@ -137,6 +139,8 @@ export default class MysApi {
       logger.error(
         `[米游社接口][${type}][${this.uid}] ${response.status} ${response.statusText}`,
       );
+      /** 失败即清理,避免下次继续命中旧缓存 */
+      await redis.del(cacheKey);
       return false;
     }
     if (this.option.log) {
@@ -152,6 +156,11 @@ export default class MysApi {
     if (res.retcode !== 0 && this.option.log) {
       logger.debug(`[米游社接口][请求参数] ${url} ${JSON.stringify(param)}`);
       logger.error(`[米游社接口][${type}][${this.uid}] 响应错误 retcode:${res.retcode} msg:${res.message}`);
+    }
+
+    /** 接口返回业务错误时清理旧缓存,避免下次继续命中失效数据 */
+    if (res.retcode !== 0) {
+      await redis.del(cacheKey);
     }
 
     res.api = type;
