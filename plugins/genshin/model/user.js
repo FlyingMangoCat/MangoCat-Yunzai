@@ -2,9 +2,11 @@ import base from "./base.js";
 import gsCfg from "./gsCfg.js";
 import lodash from "lodash";
 import fs from "node:fs";
+import path from "node:path";
 import common from "../../../lib/common/common.js";
 import MysUser from "./mys/MysUser.js";
 import MysInfo from "./mys/mysInfo.js";
+import MysApi from "./mys/mysApi.js";
 import NoteUser from "./mys/NoteUser.js";
 import Player from "./Player.js";
 
@@ -294,6 +296,10 @@ export default class User extends base {
           uidDs.face = imgs.face
           uidDs.banner = imgs.banner
         }
+        // 无角色头像数据时,尝试从 API 获取玩家展示头像角色并写入
+        if (!uidDs.face) {
+          await this.fillUidFace(user, uidDs, ds.key)
+        }
         // 绝区零：没有角色头像数据时使用默认占位图
         if (ds.key === "zzz") {
           uidDs.zzz_face = !uidDs.face
@@ -340,6 +346,45 @@ export default class User extends base {
         ],
       ),
     ])
+  }
+
+  /**
+   * 通过角色列表接口获取玩家展示头像角色(is_chosen 标记,三游戏通用),写入 PlayerData 的 face 字段
+   * 使 Player.faceImgs 能取到玩家在游戏内设置的展示头像角色
+   */
+  async fillUidFace(user, uidDs, game) {
+    try {
+      let mysUser = user.getMysUser(game)
+      if (!mysUser?.ck) return
+      let mysApi = new MysApi(String(uidDs.uid), mysUser.ck, { game }, game === "sr")
+      let res = await mysApi.getData("character")
+      if (res?.retcode !== 0 || !res?.data) return
+      let avatars = res.data.avatars || res.data.list || []
+      if (!avatars.length) return
+      // 优先取 is_chosen 标记的展示头像角色,否则取第一个角色
+      let chosen = avatars.find(a => a.is_chosen) || avatars[0]
+      let faceId = String(chosen.id || chosen.avatar_id || "")
+      if (!faceId) return
+      // 写入 PlayerData JSON 的 face 字段
+      let dir = path.join(process.cwd(), "data", "PlayerData", game)
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
+      let file = path.join(dir, `${uidDs.uid}.json`)
+      let data = {}
+      try {
+        if (fs.existsSync(file)) data = JSON.parse(fs.readFileSync(file, "utf8")) || {}
+      } catch (e) {}
+      data.face = faceId
+      fs.writeFileSync(file, JSON.stringify(data, "", "\t"))
+      // 重新加载 Player 获取 faceImgs
+      let player = Player.create(uidDs.uid, game)
+      if (player) {
+        let imgs = player?.faceImgs || {}
+        uidDs.face = imgs.face
+        uidDs.banner = imgs.banner
+      }
+    } catch (err) {
+      logger.error(`[#uid] 获取玩家展示头像角色失败: ${err}`)
+    }
   }
 
   /** 切换uid */
