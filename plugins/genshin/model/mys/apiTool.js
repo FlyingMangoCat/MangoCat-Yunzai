@@ -305,17 +305,22 @@ export default class apiTool {
             }),
         /** 首页信息 */
         index: {
-          url: `${hostRecord}game_record/app/zzz/api/index`,
+          url: `${hostRecord}event/game_record_zzz/api/zzz/index`,
           query: `role_id=${this.uid}&server=${this.server}`,
         },
         /** 角色详情 */
         character: {
-          url: `${hostRecord}game_record/app/nap/api/avatar/info`,
-          body: { role_id: this.uid, server: this.server },
+          url: `${hostRecord}event/game_record_zzz/api/zzz/avatar/basic`,
+          query: `role_id=${this.uid}&server=${this.server}`,
         },
         /** 电量 */
         dailyNote: {
-          url: `${hostRecord}game_record/app/nap/api/note`,
+          url: `${hostRecord}event/game_record_zzz/api/zzz/note`,
+          query: `role_id=${this.uid}&server=${this.server}`,
+        },
+        /** 邦布 */
+        buddy: {
+          url: `${hostRecord}event/game_record_zzz/api/zzz/buddy/info`,
           query: `role_id=${this.uid}&server=${this.server}`,
         },
       },
