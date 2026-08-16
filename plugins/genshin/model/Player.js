@@ -82,9 +82,9 @@ export default class Player extends Base {
     }
     if (this.game === 'zzz') {
       let cwd = process.cwd().replace(/\\/g, '/')
-      let fileName = CharImg.findImg(`${cwd}/plugins/liulian-plugin/resources/zzz/gacha`, avatarName)
+      let fileName = CharImg.findImg(`${cwd}/plugins/liulian-plugin/resources/zzz/role`, avatarName)
       return {
-        face: fileName ? `../../liulian-plugin/resources/zzz/gacha/${fileName}` : '/common/item/face.webp',
+        face: fileName ? `../../liulian-plugin/resources/zzz/role/${fileName}` : '/common/item/face.webp',
         banner: '/ZZZero/img/other/banner.png'
       }
     }
