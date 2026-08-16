@@ -13,7 +13,7 @@ const liulianImgMap = {
   face: 'genshin/logo/role',
   qFace: 'genshin/logo/role',
   gacha: 'genshin/gacha/character',
-  splash: 'genshin/gacha/character',
+  splash: 'genshin/logo/splash',
 }
 
 const liulianSrMap = {
