@@ -145,8 +145,12 @@ export default class apiTool {
         },
         /** 养成计算器 */
         compute: {
-          url: `${host}event/e20200928calculate/v2/compute`,
-          body: data,
+          url: `${host}event/e20200928calculate/v3/batch_compute`,
+          body: data.body,
+        },
+        computeList: {
+          url: `${host}event/e20200928calculate/v1/${data.type || "avatar"}/list`,
+          body: data.body,
         },
         blueprintCompute: {
           url: `${host}event/e20200928calculate/v1/furniture/compute`,
@@ -166,6 +170,21 @@ export default class apiTool {
         basicInfo: {
           url: `${hostRecord}game_record/app/genshin/api/gcg/basicInfo`,
           query: `role_id=${this.uid}&server=${this.server}`,
+        },
+        /** 七圣牌组 */
+        deckList: {
+          url: `${hostRecord}game_record/app/genshin/api/gcg/deckList`,
+          query: `role_id=${this.uid}&server=${this.server}`,
+        },
+        /** 七圣召唤角色牌数据 */
+        avatar_cardList: {
+          url: `${hostRecord}game_record/app/genshin/api/gcg/cardList`,
+          query: `limit=999&need_action=false&need_avatar=true&need_stats=true&offset=0&role_id=${this.uid}&server=${this.server}`,
+        },
+        /** 七圣召唤行动牌数据 */
+        action_cardList: {
+          url: `${hostRecord}game_record/app/genshin/api/gcg/cardList`,
+          query: `limit=999&need_action=true&need_avatar=false&need_stats=true&offset=0&role_id=${this.uid}&server=${this.server}`,
         },
         /** 获取抽卡authkey */
         genAuthKey: {
@@ -244,7 +263,7 @@ export default class apiTool {
          * 开拓阅历接口
          */
         ys_ledger: {
-          url: `${host}/event/srledger/month_info`,
+          url: `${host}event/srledger/month_info`,
           query: `lang=zh-cn&region=${this.server}&uid=${this.uid}&month=${data.month}`,
         },
         /** 角色面板 */
