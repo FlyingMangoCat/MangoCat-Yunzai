@@ -16,6 +16,10 @@
  * 修复：米游社接口请求头与 DS 签名
    * `getDs` 的 salt 判断由固定 server 列表改为正则，修复绝区零及海外服空 salt 导致 DS 签名错误
    * 海外端配置对齐（app_version 2.55.0、Origin/Referer），server 判断修正，海外服不再误判国内
+ * 修复：插件 handler 事件机制补全
+   * `runtime.js` 构造器补齐 `this.handler` 挂载（`has`/`call`/`callAll`），修复 ZZZ-plugin 等访问 `e.runtime.handler.has` 报 `TypeError: handler.has is not a function`
+   * `plugin.js` 构造器支持 `handler`/`namespace` 参数（插件可声明 handler 事件）
+   * `loader.js` 插件加载/热更新时 `Handler.add` 注册 handler 事件，卸载时 `Handler.del` 注销，补全 handler 完整链路
  * 优化：命令执行保护层更新类命令静默放行
    * `git pull`/`pnpm install` 等更新命令与 `-v`/`--version` 版本检查命令直接放行不打扰，危害命令仍照常拦截
  * 优化：数据保护层改为行为检测
