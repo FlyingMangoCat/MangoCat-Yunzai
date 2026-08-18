@@ -7,7 +7,7 @@
    * `runtime.getMysApi` 未接收/传递 `isSr` 参数，星铁请求被当作原神处理导致接口缺失失败，现已透传
  * 修复：绑定 uid 无反应
    * 绑定规则正则原先仅匹配 9 位 uid，绝区零为 10 位 uid 时静默失败，放宽为 9/10 位
- * 新增：绑定/查询失败提示扫码登录便捷入口
+ * 新增：绑定/查询失败提示扫码登录便捷入口ⁿᵉʷ
    * 绑定失败或查询失败（未绑定完整 cookie/stoken）时提示可发送 `#扫码登录` 一键登录绑定
  * 修复：补齐参考项目缺失接口
    * 原神补 `role_combat`/`hard_challenge`/`hard_challenge_popularity`（巨史挑战/幽境危战）与七圣召唤 `deckList`/`avatar_cardList`/`action_cardList`
