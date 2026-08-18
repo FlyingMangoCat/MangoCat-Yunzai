@@ -220,11 +220,9 @@ export default class MysApi {
 
   getDs(q = "", b = "") {
     let n = "";
-    if (
-      ["cn_gf01", "cn_qd01", "prod_gf_cn", "prod_qd_cn"].includes(this.server)
-    ) {
+    if (/cn_|_cn/.test(this.server)) {
       n = "xV8v4Qu54lUKrEYFZkJhB8cuOh9Asafs";
-    } else if (/os_|official/.test(this.server)) {
+    } else {
       n = "okr4obncj8bw5a65hbnn5oo6ixjc3l9w";
     }
     let t = Math.round(new Date().getTime() / 1000);

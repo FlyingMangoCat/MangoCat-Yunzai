@@ -81,6 +81,21 @@ export default class apiTool {
           url: `${hostRecord}game_record/app/genshin/api/spiralAbyss`,
           query: `role_id=${this.uid}&schedule_type=${data.schedule_type || 1}&server=${this.server}`,
         },
+        /** 巨史挑战 */
+        role_combat: {
+          url: `${hostRecord}game_record/app/genshin/api/role_combat`,
+          query: `role_id=${this.uid}&need_detail=true&server=${this.server}`,
+        },
+        /** 幽境危战 */
+        hard_challenge: {
+          url: `${hostRecord}game_record/app/genshin/api/hard_challenge`,
+          query: `role_id=${this.uid}&need_detail=true&server=${this.server}`,
+        },
+        /** 幽境危战人气 */
+        hard_challenge_popularity: {
+          url: `${hostRecord}game_record/app/genshin/api/hard_challenge/popularity`,
+          query: `role_id=${this.uid}&server=${this.server}`,
+        },
         /** 角色详情 */
         character: {
           url: `${hostRecord}game_record/app/genshin/api/character/list`,
@@ -206,6 +221,16 @@ export default class apiTool {
           url: `${hostRecord}game_record/app/hkrpg/api/index`,
           query: `role_id=${this.uid}&server=${this.server}`,
         },
+        /** 角色基础信息 */
+        basicInfo: {
+          url: `${hostRecord}game_record/app/hkrpg/api/role/basicInfo`,
+          query: `role_id=${this.uid}&server=${this.server}`,
+        },
+        /** 深渊(混沌回忆) */
+        spiralAbyss: {
+          url: `${hostRecord}game_record/app/hkrpg/api/challenge`,
+          query: `role_id=${this.uid}&schedule_type=${data.schedule_type || 1}&server=${this.server}`,
+        },
         UserGame: {
           url: `${host}common/badge/v1/login/account`,
           body: {
@@ -236,6 +261,22 @@ export default class apiTool {
         dailyNote: {
           url: `${hostRecord}game_record/app/hkrpg/api/note`,
           query: `role_id=${this.uid}&server=${this.server}`,
+        },
+        /** 养成计算器 */
+        compute: {
+          url: `${host}event/rpgcalc/compute?`,
+          query: `game=hkrpg`,
+          body: data.body,
+        },
+        /** 详情 */
+        detail: {
+          url: `${host}event/rpgcalc/avatar/detail`,
+          query: `game=hkrpg&lang=zh-cn&item_id=${data.avatar_id}&tab_from=${data.tab_from}&change_target_level=0&uid=${this.uid}&region=${this.server}`,
+        },
+        /** 使用兑换码(仅国际服) */
+        useCdk: {
+          url: "https://sg-hkrpg-api.hoyolab.com/common/apicdkey/api/webExchangeCdkeyHyl",
+          query: `cdkey=${data.cdk}&game_biz=hkrpg_global&lang=zh-cn&region=${this.server}&t=${new Date().getTime() + ""}&uid=${this.uid}`,
         },
         /** 签到信息 */
         bbs_sign_info: {
@@ -322,6 +363,11 @@ export default class apiTool {
         buddy: {
           url: `${hostRecord}event/game_record_zzz/api/zzz/buddy/info`,
           query: `role_id=${this.uid}&server=${this.server}`,
+        },
+        /** 使用兑换码(仅国际服) */
+        useCdk: {
+          url: "https://public-operation-nap.hoyolab.com/common/apicdkey/api/webExchangeCdkeyHyl",
+          query: `cdkey=${data.cdk}&game_biz=nap_global&lang=zh-cn&region=${this.server}&t=${new Date().getTime() + ""}&uid=${this.uid}`,
         },
       },
     };
