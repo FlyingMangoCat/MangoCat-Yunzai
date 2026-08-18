@@ -1,3 +1,30 @@
+ # 3.2.3
+
+ * 修复：米游社角色接口路径更新
+   * 原神 `character` 接口迁移至 `/character/list`，补齐 `characterDetail` 缺失接口（面板更新依赖）
+   * 实测旧路径 `game_record/app/nap/*` 等已失效（404），绝区零接口对齐 `event/game_record_zzz/api/zzz/*` 新路径，并新增邦布接口
+ * 修复：星铁面板更新失败
+   * `runtime.getMysApi` 未接收/传递 `isSr` 参数，星铁请求被当作原神处理导致接口缺失失败，现已透传
+ * 修复：绑定 uid 无反应
+   * 绑定规则正则原先仅匹配 9 位 uid，绝区零为 10 位 uid 时静默失败，放宽为 9/10 位
+ * 新增：绑定/查询失败提示扫码登录便捷入口
+   * 绑定失败或查询失败（未绑定完整 cookie/stoken）时提示可发送 `#扫码登录` 一键登录绑定
+ * 修复：补齐参考项目缺失接口
+   * 原神补 `role_combat`/`hard_challenge`/`hard_challenge_popularity`（巨史挑战/幽境危战）与七圣召唤 `deckList`/`avatar_cardList`/`action_cardList`
+   * 星铁补 `basicInfo`/`spiralAbyss`/`compute`/`detail`/`useCdk`，绝区零补 `useCdk`
+   * 养成计算器接口升级 `v3/batch_compute` 并补 `computeList`；修复星铁月历接口双斜杠 URL（404）
+ * 修复：米游社接口请求头与 DS 签名
+   * `getDs` 的 salt 判断由固定 server 列表改为正则，修复绝区零及海外服空 salt 导致 DS 签名错误
+   * 海外端配置对齐（app_version 2.55.0、Origin/Referer），server 判断修正，海外服不再误判国内
+ * 优化：命令执行保护层更新类命令静默放行
+   * `git pull`/`pnpm install` 等更新命令与 `-v`/`--version` 版本检查命令直接放行不打扰，危害命令仍照常拦截
+ * 优化：数据保护层改为行为检测
+   * 删除"本进程刚写入的自产临时文件"（如导出后清理）静默放行，不再依赖调用者身份
+   * 直接删除未写入过的数据文件仍备份+提示，核心路径/逃逸删除拦截优先级不变
+ * 新增：资源脚本执行前内容检测ⁿᵉʷ
+   * 插件执行 `bash plugins/*/resources/*.sh` 等本地脚本时，先读取脚本实际内容检测危害动作，无害才静默放行
+   * 识别伪装/混淆绕过与远程执行变体：命令替换/进程替换、引号拆分命令词、eval 远程执行、下载脚本后执行、base64 解码执行、python/perl 远程执行、混淆删除核心路径、绝对路径删除
+
  # 3.2.2
 
  * 新增：导入提瓦特小助手抽卡记录ⁿᵉʷ
