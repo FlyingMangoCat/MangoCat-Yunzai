@@ -22,6 +22,11 @@
    * `loader.js` 插件加载/热更新时 `Handler.add` 注册 handler 事件，卸载时 `Handler.del` 注销，补全 handler 完整链路
  * 优化：命令执行保护层更新类命令静默放行
    * `git pull`/`pnpm install` 等更新命令与 `-v`/`--version` 版本检查命令直接放行不打扰，危害命令仍照常拦截
+ * 优化：命令执行保护层静默白名单扩展与可信校验
+   * 静默范围扩展：`git status`/`diff`/`log`/`rev-parse` 等只读查询命令、`fastfetch`/`neofetch` 系统信息采集、`/usr/bin/chromium` 等浏览器渲染命令静默放行
+   * 静默前校验可执行文件可信（`isTrustedBinary`）：项目内（`plugins/` 等）放置的与 `git`/`fastfetch` 同名伪装脚本不获得静默豁免，仍提示主人
+   * 校验使用实际执行环境的 PATH（`opts.env.PATH`），插件自定义 PATH 含项目内目录判定为 PATH 劫持不静默；绝对路径命令不受 PATH 劫持影响
+   * 含管道/分号/重定向/命令替换等组合的命令一律不静默，防止 `git status && rm -rf data` 绕过；危险命令拦截优先级不变
  * 优化：数据保护层改为行为检测
    * 删除"本进程刚写入的自产临时文件"（如导出后清理）静默放行，不再依赖调用者身份
    * 直接删除未写入过的数据文件仍备份+提示，核心路径/逃逸删除拦截优先级不变
