@@ -271,11 +271,6 @@ export class user extends plugin {
 
   /** 刷新ck:用 stoken 换新 cookie_token 后重新绑定 */
   async refreshCk() {
-    if (this.e.isGroup) {
-      await this.reply("请私聊发送#刷新ck", false, { at: true });
-      return;
-    }
-
     let user = await this.User.user();
     if (!user.hasCk) {
       await this.reply("未绑定ck,请先发送cookie绑定或使用#扫码登录", false, { at: true });

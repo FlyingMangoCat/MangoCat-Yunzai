@@ -3,7 +3,7 @@
  * 新增：#刷新ck 指令ⁿᵉʷ
    * ck 失效后可用已绑定的 stoken 一键换新 cookie_token 并自动重新绑定，无需重新扫码/复制 cookie
    * stoken 来源：扫码登录已写入 MysUserDB.stoken，其次从已绑定 ck 中解析
-   * 仅限私聊使用；多个绑定账号逐个刷新并汇报结果
+   * 群聊/私聊均可使用；多个绑定账号逐个刷新并汇报结果
  * 修复：米游社角色接口路径更新
    * 原神 `character` 接口迁移至 `/character/list`，补齐 `characterDetail` 缺失接口（面板更新依赖）
    * 实测旧路径 `game_record/app/nap/*` 等已失效（404），绝区零接口对齐 `event/game_record_zzz/api/zzz/*` 新路径，并新增邦布接口
