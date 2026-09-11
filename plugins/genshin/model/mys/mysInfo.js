@@ -407,6 +407,21 @@ export default class MysInfo {
       case 10001:
       case 10103:
         if (/(登录|login)/i.test(res.message)) {
+          // 尝试用 stoken 自动刷新 ck,成功则重试本次请求
+          if (this.ckUser?.ltuid) {
+            let refreshRet = await this.ckUser.refreshCk().catch(() => null)
+            if (refreshRet?.ok) {
+              logger.mark(`[ck失效自动刷新成功][uid:${this.uid}][ltuid:${this.ckUser.ltuid}]`)
+              let game = mysApi?.option?.game || "gs"
+              let newMysApi = new MysApi(String(this.uid), this.ckUser.ck, { game }, game !== "gs")
+              let retryRes = await newMysApi.getData(type, data)
+              if (retryRes && Number(retryRes.retcode) === 0) {
+                if (!isTask) await this.ckUser.addQueryUid(this.uid)
+                return retryRes
+              }
+              logger.mark(`[ck失效自动刷新后重试仍失败][uid:${this.uid}]`)
+            }
+          }
           if (this.ckInfo.uid) {
             logger.mark(`[ck失效][uid:${this.uid}][qq:${this.userId}]`)
             if (!isTask)

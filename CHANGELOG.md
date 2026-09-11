@@ -4,6 +4,9 @@
    * ck 失效后可用已绑定的 stoken 一键换新 cookie_token 并自动重新绑定，无需重新扫码/复制 cookie
    * stoken 来源：扫码登录已写入 MysUserDB.stoken，其次从已绑定 ck 中解析
    * 群聊/私聊均可使用；多个绑定账号逐个刷新并汇报结果
+ * 新增：ck 失效自动刷新ⁿᵉʷ
+   * 查询遇到 ck 失效（登录态过期）时，若该账号已绑定 stoken 则自动换新 cookie_token 并重试本次查询，用户无感恢复
+   * 刷新成功但重试仍失败、或无 stoken 时，维持原有删除失效 ck + 提示逻辑不变
  * 修复：米游社角色接口路径更新
    * 原神 `character` 接口迁移至 `/character/list`，补齐 `characterDetail` 缺失接口（面板更新依赖）
    * 实测旧路径 `game_record/app/nap/*` 等已失效（404），绝区零接口对齐 `event/game_record_zzz/api/zzz/*` 新路径，并新增邦布接口

@@ -11,8 +11,26 @@ import NoteUser from "./NoteUser.js"
 import MysApi from "./mysApi.js"
 import MysUtil from "./MysUtil.js"
 import lodash from "lodash"
+import crypto from "node:crypto"
 import fetch from "node-fetch"
 import { MysUserDB, UserDB } from "../db/index.js"
+
+// 用 stoken 换新 cookie_token 的接口(passport 通道,与扫码登录一致)
+const API_GET_COOKIE = "https://passport-api.mihoyo.com/account/auth/api/getCookieAccountInfoBySToken"
+
+function randomString(n) {
+  return lodash.sampleSize(
+    "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
+    n,
+  ).join("")
+}
+
+function ds(data) {
+  const t = Math.floor(Date.now() / 1000)
+  const r = randomString(6)
+  const h = crypto.createHash("md5").update(`salt=JwYDpKvLj6MrMqqYU6jTKF17KNO2PXoS&t=${t}&r=${r}&b=${data}&q=`).digest("hex")
+  return `${t},${r},${h}`
+}
 
 const tables = {
   // ltuid-uid 查询表
@@ -510,6 +528,93 @@ export default class MysUser extends BaseModel {
 
   async save() {
     await this.db.saveDB(this)
+  }
+
+  /**
+   * 刷新ck:用 stoken 换新 cookie_token 并更新自身 ck
+   * stoken 来源:优先 MysUserDB.stoken 存档(扫码登录写入),其次从当前 ck 解析
+   * @returns {Promise<{ok: boolean, msg: string}>} ok=true 已更新并保存
+   */
+  async refreshCk() {
+    if (!this.ltuid) return { ok: false, msg: "无ltuid" }
+
+    // 读取 stoken cookie 串
+    let stokenCookie = ""
+    try {
+      const mysDb = await MysUserDB.find(Number(this.ltuid))
+      if (mysDb?.stoken) stokenCookie = mysDb.stoken
+    } catch (err) {
+      logger.error(`[刷新ck] 读取stoken存档异常 ltuid:${this.ltuid}`, err)
+    }
+    if (!stokenCookie && (this.stoken || this.ck)) {
+      let param = {}
+      String(this.stoken || this.ck).split(";").forEach((v) => {
+        let tmp = lodash.trim(v).replace("=", "~").split("~")
+        param[tmp[0]] = tmp[1]
+      })
+      if (param.stoken || param.stoken_v2) {
+        stokenCookie = `stoken=${param.stoken || param.stoken_v2};stuid=${param.stuid || this.ltuid};mid=${param.mid || ""}`
+      }
+    }
+    if (!stokenCookie) return { ok: false, msg: "无stoken,无法刷新" }
+
+    let sParam = {}
+    stokenCookie.split(";").forEach((v) => {
+      let tmp = lodash.trim(v).replace("=", "~").split("~")
+      sParam[tmp[0]] = tmp[1]
+    })
+    let stoken = sParam.stoken
+    let stuid = sParam.stuid || this.ltuid
+    let mid = sParam.mid || ""
+
+    // stoken 换新 cookie_token
+    let cookieToken = ""
+    try {
+      let url = `${API_GET_COOKIE}?stoken=${stoken}&uid=${stuid}` + (mid ? `&mid=${mid}` : "")
+      let res = await (
+        await fetch(url, {
+          headers: {
+            "x-rpc-app_version": "2.104.0",
+            DS: ds(""),
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            "x-rpc-game_biz": "bbs_cn",
+            "x-rpc-sys_version": "12",
+            "x-rpc-device_id": randomString(16),
+            "x-rpc-device_fp": randomString(13),
+            "x-rpc-device_name": randomString(16),
+            "x-rpc-device_model": randomString(16),
+            "x-rpc-app_id": "bll8iq97cem8",
+            "x-rpc-client_type": "2",
+            "User-Agent": "Hyperion/550 CFNetwork/3860.500.112 Darwin/25.4.0",
+            Cookie: stokenCookie,
+          },
+        })
+      ).json()
+      logger.mark(`[刷新ck] 换cookie_token ltuid:${this.ltuid} retcode:${res.retcode}`)
+      if (res.retcode === 0 && res.data?.cookie_token) {
+        cookieToken = res.data.cookie_token
+      } else {
+        return { ok: false, msg: res.message || "换取cookie_token失败" }
+      }
+    } catch (err) {
+      logger.error(`[刷新ck] 请求异常 ltuid:${this.ltuid}`, err)
+      return { ok: false, msg: "请求异常" }
+    }
+
+    // 拼新 ck 并更新(ltoken 用 stoken 代位,与扫码登录一致)
+    let ck = [
+      `ltoken=${stoken}`,
+      `ltuid=${stuid}`,
+      `cookie_token=${cookieToken}`,
+      `account_id=${stuid}`,
+      `stoken=${stoken}`,
+      `stuid=${stuid}`,
+      mid ? `mid=${mid}` : "",
+    ].filter(Boolean).join(";")
+    this.setCkData({ ck, stoken: stokenCookie })
+    await this.save()
+    return { ok: true, msg: `ltuid:${this.ltuid} 刷新成功` }
   }
 
   // 为当前MysUser绑定uid

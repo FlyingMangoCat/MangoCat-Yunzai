@@ -1,56 +1,7 @@
 import plugin from "../../../lib/plugins/plugin.js";
 import fs from "node:fs";
-import lodash from "lodash";
-import crypto from "node:crypto";
-import fetch from "node-fetch";
 import gsCfg from "../model/gsCfg.js";
 import User from "../model/user.js";
-import { MysUserDB } from "../model/db/index.js";
-
-// 用 stoken 换新 cookie_token 的接口(与扫码登录同款 passport 通道)
-const API_GET_COOKIE = "https://passport-api.mihoyo.com/account/auth/api/getCookieAccountInfoBySToken";
-
-function randomString(n) {
-  return lodash
-    .sampleSize(
-      "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
-      n,
-    )
-    .join("");
-}
-
-function md5(data) {
-  return crypto.createHash("md5").update(data).digest("hex");
-}
-
-function ds(data) {
-  const t = Math.floor(Date.now() / 1000);
-  const r = randomString(6);
-  const h = md5(`salt=JwYDpKvLj6MrMqqYU6jTKF17KNO2PXoS&t=${t}&r=${r}&b=${data}&q=`);
-  return `${t},${r},${h}`;
-}
-
-// passport 通用请求(Hyperion 风格,与扫码登录一致)
-function passportRequest(url, cookie) {
-  return fetch(url, {
-    headers: {
-      "x-rpc-app_version": "2.104.0",
-      DS: ds(""),
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      "x-rpc-game_biz": "bbs_cn",
-      "x-rpc-sys_version": "12",
-      "x-rpc-device_id": randomString(16),
-      "x-rpc-device_fp": randomString(13),
-      "x-rpc-device_name": randomString(16),
-      "x-rpc-device_model": randomString(16),
-      "x-rpc-app_id": "bll8iq97cem8",
-      "x-rpc-client_type": "2",
-      "User-Agent": "Hyperion/550 CFNetwork/3860.500.112 Darwin/25.4.0",
-      Cookie: cookie,
-    },
-  });
-}
 
 export class user extends plugin {
   constructor(e) {
@@ -269,7 +220,7 @@ export class user extends plugin {
     await this.User.checkCkStatus();
   }
 
-  /** 刷新ck:用 stoken 换新 cookie_token 后重新绑定 */
+  /** 刷新ck:用 stoken 换新 cookie_token 后重新生效(复用 MysUser.refreshCk) */
   async refreshCk() {
     let user = await this.User.user();
     if (!user.hasCk) {
@@ -282,76 +233,14 @@ export class user extends plugin {
     for (let ltuid in user.mysUsers) {
       let mys = user.mysUsers[ltuid];
       if (!mys?.ltuid) continue;
-
-      // stoken 优先从 MysUserDB 存档读取
-      let stokenCookie = "";
-      try {
-        const mysDb = await MysUserDB.find(Number(ltuid));
-        if (mysDb?.stoken) stokenCookie = mysDb.stoken;
-      } catch (err) {
-        logger.error(`[刷新ck] 读取stoken存档异常 ltuid:${ltuid}`, err);
-      }
-      // 存档没有则从 ck 解析
-      if (!stokenCookie) {
-        let param = {};
-        String(mys.ck || "").split(";").forEach((v) => {
-          let tmp = lodash.trim(v).replace("=", "~").split("~");
-          param[tmp[0]] = tmp[1];
-        });
-        if (param.stoken || param.stoken_v2) {
-          stokenCookie = `stoken=${param.stoken || param.stoken_v2};stuid=${param.stuid || ltuid};mid=${param.mid || ""}`;
-        }
-      }
-      if (!stokenCookie) {
-        failed.push(`ltuid:${ltuid} 无stoken,无法刷新`);
-        continue;
-      }
-
-      // 从 stokenCookie 提取 stoken/stuid/mid
-      let sParam = {};
-      stokenCookie.split(";").forEach((v) => {
-        let tmp = lodash.trim(v).replace("=", "~").split("~");
-        sParam[tmp[0]] = tmp[1];
+      let ret = await mys.refreshCk().catch((err) => {
+        logger.error(`[刷新ck] 异常 ltuid:${ltuid}`, err);
+        return { ok: false, msg: "刷新异常" };
       });
-      let stoken = sParam.stoken;
-      let stuid = sParam.stuid || ltuid;
-      let mid = sParam.mid || "";
-
-      // stoken 换新 cookie_token
-      let cookieToken = "";
-      try {
-        let url = `${API_GET_COOKIE}?stoken=${stoken}&uid=${stuid}` + (mid ? `&mid=${mid}` : "");
-        let res = await (await passportRequest(url, stokenCookie)).json();
-        logger.mark(`[刷新ck] 换cookie_token ltuid:${ltuid} retcode:${res.retcode}`);
-        if (res.retcode === 0 && res.data?.cookie_token) {
-          cookieToken = res.data.cookie_token;
-        } else {
-          failed.push(`ltuid:${ltuid} ${res.message || "换取失败"}`);
-          continue;
-        }
-      } catch (err) {
-        logger.error(`[刷新ck] 请求异常 ltuid:${ltuid}`, err);
-        failed.push(`ltuid:${ltuid} 请求异常`);
-        continue;
-      }
-
-      // 拼新 ck 走本体绑定流程(ltoken 用 stoken 代位,与扫码登录一致)
-      this.e.ck = [
-        `ltoken=${stoken}`,
-        `ltuid=${stuid}`,
-        `cookie_token=${cookieToken}`,
-        `account_id=${stuid}`,
-        `stoken=${stoken}`,
-        `stuid=${stuid}`,
-        mid ? `mid=${mid}` : "",
-      ].filter(Boolean).join(";");
-
-      try {
-        await this.User.bing();
+      if (ret?.ok) {
         refreshed++;
-      } catch (err) {
-        logger.error(`[刷新ck] 绑定异常 ltuid:${ltuid}`, err);
-        failed.push(`ltuid:${ltuid} 绑定异常`);
+      } else {
+        failed.push(`ltuid:${ltuid} ${ret?.msg || "刷新失败"}`);
       }
     }
 
