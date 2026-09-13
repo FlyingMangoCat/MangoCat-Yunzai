@@ -35,7 +35,9 @@
    * 更新白名单补组合符号防护：`git pull && <任意命令>` 等组合命令不再借更新白名单前缀静默执行，一律提示主人；`git commit -m "fix: a||b"` 引号内字面量正常静默；危险命令拦截（删除核心路径/管道执行远程等）仍优先于所有白名单
    * 静默前校验可执行文件可信（`isTrustedBinary`）：项目内（`plugins/` 等）放置的与 `git`/`fastfetch` 同名伪装脚本不获得静默豁免，仍提示主人
    * 校验使用实际执行环境的 PATH（`opts.env.PATH`），插件自定义 PATH 含项目内目录判定为 PATH 劫持不静默；绝对路径命令不受 PATH 劫持影响
-   * 含管道/分号/重定向/命令替换等组合的命令一律不静默，防止 `git status && rm -rf data` 绕过；危险命令拦截优先级不变
+   * 含管道/分号/重定向/命令替换/换行等组合的命令一律不静默，防止 `git status && rm -rf data`、`git pull\n<任意命令>`（换行也是 shell 命令分隔符）绕过；危险命令拦截优先级不变
+   * 拒绝 git 配置注入与远程执行选项：`git -c protocol.ext.allow=always pull ext::sh -c <任意命令>`、`--upload-pack`/`--receive-pack`/`--exec` 指定任意命令、`git pull ext::sh -c <任意命令>` 传输助手协议均不再静默
+   * git 只读白名单收紧：`git config` 仅限 `--get`/`--list` 等纯读形式（`git config core.hooksPath <路径>` 写操作可劫持 hooks，不再静默）；`git stash clear`/`drop`（清空/丢弃存档）、`git checkout -- .`（丢弃全部本地改动）等破坏性形式不再静默
  * 优化：数据保护层改为行为检测
    * 删除"本进程刚写入的自产临时文件"（如导出后清理）静默放行，不再依赖调用者身份
    * 直接删除未写入过的数据文件仍备份+提示，核心路径/逃逸删除拦截优先级不变
