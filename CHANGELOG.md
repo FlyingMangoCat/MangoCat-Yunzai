@@ -39,6 +39,7 @@
    * 拒绝 git 配置注入与远程执行选项：`git -c protocol.ext.allow=always pull ext::sh -c <任意命令>`、`--upload-pack`/`--receive-pack`/`--exec` 指定任意命令、`git pull ext::sh -c <任意命令>` 传输助手协议均不再静默
    * git 只读白名单收紧：`git config` 仅限 `--get`/`--list` 等纯读形式（`git config core.hooksPath <路径>` 写操作可劫持 hooks，不再静默）；`git stash clear`/`drop`（清空/丢弃存档）、`git checkout -- .`（丢弃全部本地改动）等破坏性形式不再静默
    * 防环境变量注入：插件执行命令时显式传入 `GIT_SSH_COMMAND`/`NODE_OPTIONS`/`BASH_ENV`/`LD_PRELOAD`/`GIT_CONFIG_PARAMETERS` 等危险环境变量（可在 git/node/bash 启动时执行任意代码，命令字符串上看不出来），不再静默放行，改为一律提示主人；与继承环境同值的变量不算注入，正常传 env 的插件不受影响
+   * 危险拦截收紧：rm 类删除命令由只查第一个目标改为全参数扫描，`rm backup config`（先删无害目录再删核心目录）、`rm temp app.js` 等多目标命令不再漏检核心路径；Windows `del /q`/`rd /s /q` 形式同覆盖（开关仅认单字母，不误跳 `/root` 等 Unix 单段绝对路径）
  * 优化：数据保护层改为行为检测
    * 删除"本进程刚写入的自产临时文件"（如导出后清理）静默放行，不再依赖调用者身份
    * 直接删除未写入过的数据文件仍备份+提示，核心路径/逃逸删除拦截优先级不变
