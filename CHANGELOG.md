@@ -1,5 +1,7 @@
  # 3.2.3
 
+ * 修复：米游社公告接口 404
+   * `getNewsList` 迁移至新域名与路径（bbs-api-static.miyoushe.com/painter/wapi），原/星铁公告推送恢复正常
  * 新增：OneBotv11 群待办接口ⁿᵉʷ
    * 群对象新增 `getTodoList`（获取群待办列表）/`setTodo`（设置群待办）/`completeTodo`（完成群待办）/`cancelTodo`（取消群待办），插件可直接调用（需协议端支持，bot 为群管理员）
  * 新增：#刷新ck 指令ⁿᵉʷ
