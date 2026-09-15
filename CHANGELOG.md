@@ -1,5 +1,7 @@
  # 3.2.3
 
+ * 新增：OneBotv11 群待办接口ⁿᵉʷ
+   * 群对象新增 `getTodoList`（获取群待办列表）/`setTodo`（设置群待办）/`completeTodo`（完成群待办）/`cancelTodo`（取消群待办），插件可直接调用（需协议端支持，bot 为群管理员）
  * 新增：#刷新ck 指令ⁿᵉʷ
    * ck 失效后可用已绑定的 stoken 一键换新 cookie_token 并自动重新绑定，无需重新扫码/复制 cookie
    * stoken 来源：扫码登录已写入 MysUserDB.stoken，其次从已绑定 ck 中解析
