@@ -436,12 +436,12 @@ export default class MysNews extends base {
         continue;
       }
       if (val.typeName == "公告") {
-        for (let groupId of cfg.announceGroup) {
+        for (let groupId of (cfg.announceGroup || [])) {
           await this.sendNews(groupId, val.typeName, val.post.post_id);
         }
       }
       if (val.typeName == "资讯") {
-        for (let groupId of cfg.infoGroup) {
+        for (let groupId of (cfg.infoGroup || [])) {
           await this.sendNews(groupId, val.typeName, val.post.post_id);
         }
       }
