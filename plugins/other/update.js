@@ -141,7 +141,8 @@ export class update extends plugin {
         if (re.error || !re.stdout.trim()) return;
       }
       await this.execSync(`git -C "${dir}" add -A`);
-      await this.execSync(`git -C "${dir}" commit -m "chore: 自动提交本地改动（含插件清洗）" --no-verify`);
+      // 内联提交身份,避免服务器未配置 user.name/email 时提交/合并失败
+      await this.execSync(`git -C "${dir}" -c user.name=atomcode -c user.email=noreply@atomgit.com commit -m "chore: 自动提交本地改动（含插件清洗）" --no-verify`);
       logger.mark(`[更新] ${plugin || "本体"} 已自动提交本地改动，避免 pull 冲突`);
     } catch (err) {
       logger.debug(`[更新] ${plugin || "本体"} 自动提交本地改动失败：${err.message}`);
@@ -159,7 +160,7 @@ export class update extends plugin {
   async runUpdate(plugin = "") {
     this.isNowUp = false;
 
-    let cm = "git pull --no-rebase";
+    let cm = "git -c user.name=atomcode -c user.email=noreply@atomgit.com pull --no-rebase";
 
     let type = "更新";
     const isForce = this.e.msg.includes("强制");
@@ -168,11 +169,11 @@ export class update extends plugin {
       // 按实际分支重置(勿写死 origin/main),插件目录需加 -C 前缀
       const branch = (await this.getBranch(plugin)) || "main";
       const gitDir = plugin ? `git -C ./plugins/${plugin}/` : "git";
-      cm = `${gitDir} fetch --all && ${gitDir} reset --hard origin/${branch} && ${gitDir} pull --no-rebase`;
+      cm = `${gitDir} fetch --all && ${gitDir} reset --hard origin/${branch} && ${gitDir} -c user.name=atomcode -c user.email=noreply@atomgit.com pull --no-rebase`;
     }
 
     if (plugin) {
-      cm = `git -C ./plugins/${plugin}/ pull --no-rebase`;
+      cm = `git -C ./plugins/${plugin}/ -c user.name=atomcode -c user.email=noreply@atomgit.com pull --no-rebase`;
     }
 
     // pull 前自动提交本地未提交改动（含插件清洗改动），避免 pull 因本地修改被拒/冲突
