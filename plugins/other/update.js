@@ -101,6 +101,9 @@ export class update extends plugin {
    * 目的：清洗改动落盘后若未提交，git pull 会因"本地修改将被覆盖"而拒绝/冲突；
    * 这里把本地改动先提交成本地 commit，使 pull 能干净合并（作者未改同一行时自动成功）。
    * 仅处理有 .git 的独立仓库目录，主仓库跟踪的插件（无 .git）跳过。
+   * 提交前对改动的 js/json 做语法校验：写入中断留下的半截坏文件一旦被 commit,
+   * pull 合并后会原样保留(上游没动同一行就以本地为准),导致更新"成功"却带着坏文件,
+   * 因此校验不过的文件先从 HEAD 还原,绝不把语法坏文件提交进仓库。
    * @param {string} plugin 插件名（空=更新本体主仓库）
    */
   async preCommit(plugin = "") {
@@ -109,12 +112,48 @@ export class update extends plugin {
       if (!fs.existsSync(`${dir}/.git`)) return;
       const status = await this.execSync(`git -C "${dir}" status --porcelain`);
       if (status.error || !status.stdout.trim()) return;
+      // 语法校验:只校验文本可完整读出的 js/json 文件
+      const files = status.stdout
+        .split("\n")
+        .map((l) => lodash.trim(l).replace(/^[AMD?]+\s+/, "").replace(/^"|"$/g, ""))
+        .filter((f) => f && /\.(js|mjs|cjs|json)$/.test(f));
+      let broken = [];
+      for (const f of files) {
+        const fp = `${dir}/${f}`;
+        if (!fs.existsSync(fp)) continue;
+        try {
+          if (/\.json$/.test(f)) {
+            JSON.parse(fs.readFileSync(fp, "utf8"));
+          } else {
+            const check = await this.execSync(`node --check "${fp}"`);
+            if (check.error) broken.push(f);
+          }
+        } catch (e) {
+          broken.push(f);
+        }
+      }
+      if (broken.length) {
+        for (const f of broken) {
+          await this.execSync(`git -C "${dir}" checkout -- "${f}"`);
+          logger.mark(`[更新] ${plugin || "本体"} 检测到语法异常文件，已还原为仓库版本：${f}`);
+        }
+        const re = await this.execSync(`git -C "${dir}" status --porcelain`);
+        if (re.error || !re.stdout.trim()) return;
+      }
       await this.execSync(`git -C "${dir}" add -A`);
       await this.execSync(`git -C "${dir}" commit -m "chore: 自动提交本地改动（含插件清洗）" --no-verify`);
       logger.mark(`[更新] ${plugin || "本体"} 已自动提交本地改动，避免 pull 冲突`);
     } catch (err) {
       logger.debug(`[更新] ${plugin || "本体"} 自动提交本地改动失败：${err.message}`);
     }
+  }
+
+  async getBranch(plugin = "") {
+    const cm = plugin
+      ? `git -C ./plugins/${plugin}/ rev-parse --abbrev-ref HEAD`
+      : "git rev-parse --abbrev-ref HEAD";
+    const ret = await this.execSync(cm);
+    return ret.error ? "" : lodash.trim(ret.stdout);
   }
 
   async runUpdate(plugin = "") {
@@ -126,7 +165,10 @@ export class update extends plugin {
     const isForce = this.e.msg.includes("强制");
     if (isForce) {
       type = "强制更新";
-      cm = `git fetch --all && git reset --hard origin/main && ${cm}`;
+      // 按实际分支重置(勿写死 origin/main),插件目录需加 -C 前缀
+      const branch = (await this.getBranch(plugin)) || "main";
+      const gitDir = plugin ? `git -C ./plugins/${plugin}/` : "git";
+      cm = `${gitDir} fetch --all && ${gitDir} reset --hard origin/${branch} && ${gitDir} pull --no-rebase`;
     }
 
     if (plugin) {
