@@ -97,55 +97,50 @@ export class update extends plugin {
   }
 
   /**
-   * pull 前自动提交本地未提交改动（含插件清洗产生的修改）
-   * 目的：清洗改动落盘后若未提交，git pull 会因"本地修改将被覆盖"而拒绝/冲突；
-   * 这里把本地改动先提交成本地 commit，使 pull 能干净合并（作者未改同一行时自动成功）。
+   * pull 前暂存本地未提交改动（含插件清洗产生的修改）
+   * 目的：工作区有改动时 git pull 会被拒绝,用 stash 暂存而非 commit——
+   * 更新只应拉代码,不应在插件仓库里产生任何提交;
+   * pull 成功后 stash pop 把改动放回,合并冲突时保留 stash 由用户自行处理。
    * 仅处理有 .git 的独立仓库目录，主仓库跟踪的插件（无 .git）跳过。
-   * 提交前对改动的 js/json 做语法校验：写入中断留下的半截坏文件一旦被 commit,
-   * pull 合并后会原样保留(上游没动同一行就以本地为准),导致更新"成功"却带着坏文件,
-   * 因此校验不过的文件先从 HEAD 还原,绝不把语法坏文件提交进仓库。
    * @param {string} plugin 插件名（空=更新本体主仓库）
+   * @returns {Promise<boolean>} 是否执行了 stash
    */
   async preCommit(plugin = "") {
     try {
       const dir = plugin ? `./plugins/${plugin}` : ".";
-      if (!fs.existsSync(`${dir}/.git`)) return;
+      if (!fs.existsSync(`${dir}/.git`)) return false;
       const status = await this.execSync(`git -C "${dir}" status --porcelain`);
-      if (status.error || !status.stdout.trim()) return;
-      // 语法校验:只校验文本可完整读出的 js/json 文件
-      const files = status.stdout
-        .split("\n")
-        .map((l) => lodash.trim(l).replace(/^[AMD?]+\s+/, "").replace(/^"|"$/g, ""))
-        .filter((f) => f && /\.(js|mjs|cjs|json)$/.test(f));
-      let broken = [];
-      for (const f of files) {
-        const fp = `${dir}/${f}`;
-        if (!fs.existsSync(fp)) continue;
-        try {
-          if (/\.json$/.test(f)) {
-            JSON.parse(fs.readFileSync(fp, "utf8"));
-          } else {
-            const check = await this.execSync(`node --check "${fp}"`);
-            if (check.error) broken.push(f);
-          }
-        } catch (e) {
-          broken.push(f);
-        }
+      if (status.error || !status.stdout.trim()) return false;
+      const ret = await this.execSync(`git -C "${dir}" stash push -u -m "更新前暂存"`);
+      if (ret.error) {
+        logger.debug(`[更新] ${plugin || "本体"} 暂存本地改动失败：${ret.error.message}`);
+        return false;
       }
-      if (broken.length) {
-        for (const f of broken) {
-          await this.execSync(`git -C "${dir}" checkout -- "${f}"`);
-          logger.mark(`[更新] ${plugin || "本体"} 检测到语法异常文件，已还原为仓库版本：${f}`);
-        }
-        const re = await this.execSync(`git -C "${dir}" status --porcelain`);
-        if (re.error || !re.stdout.trim()) return;
-      }
-      await this.execSync(`git -C "${dir}" add -A`);
-      // 内联提交身份,避免服务器未配置 user.name/email 时提交/合并失败
-      await this.execSync(`git -C "${dir}" -c user.name=atomcode -c user.email=noreply@atomgit.com commit -m "chore: 自动提交本地改动（含插件清洗）" --no-verify`);
-      logger.mark(`[更新] ${plugin || "本体"} 已自动提交本地改动，避免 pull 冲突`);
+      logger.mark(`[更新] ${plugin || "本体"} 已暂存本地改动，更新后恢复`);
+      return true;
     } catch (err) {
-      logger.debug(`[更新] ${plugin || "本体"} 自动提交本地改动失败：${err.message}`);
+      logger.debug(`[更新] ${plugin || "本体"} 暂存本地改动失败：${err.message}`);
+      return false;
+    }
+  }
+
+  /**
+   * pull 后恢复 preCommit 暂存的本地改动;冲突时保留 stash 不丢弃
+   */
+  async postRestore(plugin = "") {
+    try {
+      const dir = plugin ? `./plugins/${plugin}` : ".";
+      if (!fs.existsSync(`${dir}/.git`)) return;
+      const stashList = await this.execSync(`git -C "${dir}" stash list`);
+      if (stashList.error || !/更新前暂存/.test(stashList.stdout)) return;
+      const ret = await this.execSync(`git -C "${dir}" stash pop`);
+      if (ret.error) {
+        logger.mark(`[更新] ${plugin || "本体"} 恢复暂存改动有冲突，已保留在 stash，可自行处理：git -C ${dir} stash pop`);
+        return;
+      }
+      logger.mark(`[更新] ${plugin || "本体"} 已恢复暂存的本地改动`);
+    } catch (err) {
+      logger.debug(`[更新] ${plugin || "本体"} 恢复暂存改动失败：${err.message}`);
     }
   }
 
@@ -176,9 +171,10 @@ export class update extends plugin {
       cm = `git -C ./plugins/${plugin}/ -c user.name=atomcode -c user.email=noreply@atomgit.com pull --no-rebase`;
     }
 
-    // pull 前自动提交本地未提交改动（含插件清洗改动），避免 pull 因本地修改被拒/冲突
-    // 强制更新走 reset --hard 会丢弃本地改动，无需提交
-    if (!isForce) await this.preCommit(plugin);
+    // pull 前暂存本地未提交改动（含插件清洗改动），避免 pull 因本地修改被拒;
+    // 强制更新走 reset --hard 会丢弃本地改动，无需暂存
+    let stashed = false;
+    if (!isForce) stashed = await this.preCommit(plugin);
 
     this.oldCommitId = await this.getcommitId(plugin);
 
@@ -190,10 +186,14 @@ export class update extends plugin {
     uping = false;
 
     if (ret.error) {
+      // pull 失败也要把暂存的改动放回,不弄丢用户数据
+      if (stashed) await this.postRestore(plugin);
       logger.mark(`${this.e.logFnc} 更新失败：${this.typeName}`);
       this.gitErr(ret.error, ret.stdout);
       return false;
     }
+
+    if (stashed) await this.postRestore(plugin);
 
     let time = await this.getTime(plugin);
 
