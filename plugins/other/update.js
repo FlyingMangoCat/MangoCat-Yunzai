@@ -181,7 +181,7 @@ export class update extends plugin {
   async runUpdate(plugin = "") {
     this.isNowUp = false;
 
-    let cm = "git -c user.name=atomcode -c user.email=noreply@atomgit.com pull --no-rebase";
+    let cm = "git pull --ff-only";
 
     let type = "更新";
     const isForce = this.e.msg.includes("强制");
@@ -190,11 +190,11 @@ export class update extends plugin {
       // 按实际分支重置(勿写死 origin/main),插件目录需加 -C 前缀
       const branch = (await this.getBranch(plugin)) || "main";
       const gitDir = plugin ? `git -C ./plugins/${plugin}/` : "git";
-      cm = `${gitDir} fetch --all && ${gitDir} reset --hard origin/${branch} && ${gitDir} -c user.name=atomcode -c user.email=noreply@atomgit.com pull --no-rebase`;
+      cm = `${gitDir} fetch --all && ${gitDir} reset --hard origin/${branch} && ${gitDir} pull --ff-only`;
     }
 
     if (plugin) {
-      cm = `git -C ./plugins/${plugin}/ -c user.name=atomcode -c user.email=noreply@atomgit.com pull --no-rebase`;
+      cm = `git -C ./plugins/${plugin}/ pull --ff-only`;
     }
 
     // pull 前暂存本地未提交改动（含插件清洗改动），避免 pull 因本地修改被拒;
