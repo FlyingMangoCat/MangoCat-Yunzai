@@ -152,6 +152,32 @@ export class update extends plugin {
     return ret.error ? "" : lodash.trim(ret.stdout);
   }
 
+  /**
+   * 清理历史自动提交产生的本地领先 commit(仅本工具造成的垃圾):
+   * 若本地领先远端的提交全部是"自动提交本地改动",则对齐远端丢弃;
+   * 混有其他提交(用户自己的改动)则不动,避免误伤。
+   * @param {string} plugin 插件名（空=更新本体主仓库）
+   */
+  async autoCleanLocalCommits(plugin = "") {
+    try {
+      const dir = plugin ? `./plugins/${plugin}` : ".";
+      if (!fs.existsSync(`${dir}/.git`)) return;
+      const branchRet = await this.execSync(`git -C "${dir}" rev-parse --abbrev-ref HEAD`);
+      if (branchRet.error || !branchRet.stdout.trim()) return;
+      const branch = lodash.trim(branchRet.stdout);
+      await this.execSync(`git -C "${dir}" fetch origin`);
+      const logRet = await this.execSync(`git -C "${dir}" log origin/${branch}..HEAD --pretty=%s`);
+      if (logRet.error || !logRet.stdout.trim()) return;
+      const subjects = lodash.trim(logRet.stdout).split("\n");
+      // 领先提交里只要有一个不是自动提交,就不动
+      if (subjects.some((s) => !s.includes("自动提交本地改动"))) return;
+      await this.execSync(`git -C "${dir}" reset --hard origin/${branch}`);
+      logger.mark(`[更新] ${plugin || "本体"} 已清理 ${subjects.length} 个历史自动提交，对齐远端`);
+    } catch (err) {
+      logger.debug(`[更新] ${plugin || "本体"} 自动清理本地提交失败：${err.message}`);
+    }
+  }
+
   async runUpdate(plugin = "") {
     this.isNowUp = false;
 
@@ -173,6 +199,7 @@ export class update extends plugin {
 
     // pull 前暂存本地未提交改动（含插件清洗改动），避免 pull 因本地修改被拒;
     // 强制更新走 reset --hard 会丢弃本地改动，无需暂存
+    if (!isForce) await this.autoCleanLocalCommits(plugin);
     let stashed = false;
     if (!isForce) stashed = await this.preCommit(plugin);
 
