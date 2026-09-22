@@ -224,6 +224,18 @@ export class update extends plugin {
       if (stashed) await this.postRestore(plugin);
       logger.mark(`${this.e.logFnc} 更新失败：${this.typeName}`);
       this.gitErr(ret.error, ret.stdout);
+      // 分叉导致 fast-forward 失败时自查:自动列出本地领先远端的提交,分叉原因直接随回复返回
+      if (/fast-forward|Diverging|Not possible/i.test(String(ret.error))) {
+        const divergeBranch = (await this.getBranch(plugin)) || "";
+        const divergeDir = plugin ? `./plugins/${plugin}` : ".";
+        if (divergeBranch && fs.existsSync(`${divergeDir}/.git`)) {
+          const listRet = await this.execSync(`git -C "${divergeDir}" log origin/${divergeBranch}..HEAD --oneline`);
+          if (!listRet.error && listRet.stdout.trim()) {
+            const list = lodash.trim(listRet.stdout).split("\n").slice(0, 10).join("\n");
+            await this.reply(`【${this.typeName}】本地领先远端的提交(分叉原因，前10条)：\n${list}\n可用 #强制更新${plugin || ""} 对齐远端`);
+          }
+        }
+      }
       return false;
     }
 
