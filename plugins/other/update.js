@@ -204,11 +204,10 @@ export class update extends plugin {
       cm = `git -C ./plugins/${plugin}/ pull --ff-only`;
     }
 
-    // pull 前暂存本地未提交改动（含插件清洗改动），避免 pull 因本地修改被拒;
-    // 强制更新走 reset --hard 会丢弃本地改动，无需暂存
+    // pull/reset 前暂存本地未提交改动,避免 pull 被拒;强制更新 reset --hard 会覆盖
+    // 已跟踪文件的本地改动,同样先 stash 保护(含未跟踪的配置文件),完成后恢复
     if (!isForce) await this.autoCleanLocalCommits(plugin);
-    let stashed = false;
-    if (!isForce) stashed = await this.preCommit(plugin);
+    let stashed = await this.preCommit(plugin);
 
     this.oldCommitId = await this.getcommitId(plugin);
 
