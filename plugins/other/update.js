@@ -131,8 +131,9 @@ export class update extends plugin {
     try {
       const dir = plugin ? `./plugins/${plugin}` : ".";
       if (!fs.existsSync(`${dir}/.git`)) return;
-      const stashList = await this.execSync(`git -C "${dir}" stash list`);
-      if (stashList.error || !/更新前暂存/.test(stashList.stdout)) return;
+      // 只看栈顶第一条:是本次更新打的标记才 pop,防止误弹用户自己的旧 stash
+      const top = await this.execSync(`git -C "${dir}" stash list -n 1`);
+      if (top.error || !/更新前暂存/.test(top.stdout)) return;
       const ret = await this.execSync(`git -C "${dir}" stash pop`);
       if (ret.error) {
         logger.mark(`[更新] ${plugin || "本体"} 恢复暂存改动有冲突，已保留在 stash，可自行处理：git -C ${dir} stash pop`);
