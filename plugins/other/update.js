@@ -185,14 +185,13 @@ export class update extends plugin {
     }
   }
 
-  async runUpdate(plugin = "", force = false) {
+  async runUpdate(plugin = "") {
     this.isNowUp = false;
 
     let cm = "git pull --ff-only";
 
     let type = "更新";
-    // force=true 供 #全部更新 调用(全部更新本身即强制语义,对齐远端)
-    const isForce = force || this.e.msg.includes("强制");
+    const isForce = this.e.msg.includes("强制");
     if (isForce) {
       type = "强制更新";
       // 按实际分支重置(勿写死 origin/main),插件目录需加 -C 前缀
@@ -205,10 +204,11 @@ export class update extends plugin {
       cm = `git -C ./plugins/${plugin}/ pull --ff-only`;
     }
 
-    // pull/reset 前暂存本地未提交改动,避免 pull 被拒;强制更新 reset --hard 会覆盖
-    // 已跟踪文件的本地改动,同样先 stash 保护(含未跟踪的配置文件),完成后恢复
+    // pull 前暂存本地未提交改动（含插件清洗改动），避免 pull 因本地修改被拒;
+    // 强制更新走 reset --hard 直接对齐远端，无需暂存
     if (!isForce) await this.autoCleanLocalCommits(plugin);
-    let stashed = await this.preCommit(plugin);
+    let stashed = false;
+    if (!isForce) stashed = await this.preCommit(plugin);
 
     this.oldCommitId = await this.getcommitId(plugin);
 
@@ -336,8 +336,7 @@ export class update extends plugin {
       plu = this.getPlugin(plu);
       if (plu === false) continue;
       await common.sleep(1500);
-      // 全部更新本身即强制语义:对齐远端(配置由 stash 保护,不丢)
-      await this.runUpdate(plu, true);
+      await this.runUpdate(plu);
     }
 
     if (this.isUp) {
