@@ -172,9 +172,11 @@ export class update extends plugin {
       const subjects = lodash.trim(logRet.stdout).split("\n");
       // 旧更新链产生的本地垃圾提交:
       //  - "自动提交本地改动"(旧 preCommit 方案)
-      //  - "Merge branch ..."(旧 pull --no-rebase 在分叉时自动产生的合并提交)
+      //  - "Merge branch ..."(旧 pull --no-rebase 在分叉时自动产生的合并提交,
+      //    标题常含远程 URL 如 "of https://gitee.com/...";本地领先远端的提交里
+      //    Merge 开头只可能是旧更新链产物,远端的合并提交不会出现在本地领先侧)
       // 领先提交里只要有一个不属于上述垃圾,就不动
-      const junkRe = /自动提交本地改动|^Merge branch '.*'(?:(?!GitLab|github|gitee).)*$/i;
+      const junkRe = /自动提交本地改动|^Merge branch '/i;
       if (subjects.some((s) => !junkRe.test(s))) return;
       await this.execSync(`git -C "${dir}" reset --hard origin/${branch}`);
       logger.mark(`[更新] ${plugin || "本体"} 已清理 ${subjects.length} 个历史自动提交/合并残留，对齐远端`);
