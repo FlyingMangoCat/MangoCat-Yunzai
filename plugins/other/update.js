@@ -185,13 +185,14 @@ export class update extends plugin {
     }
   }
 
-  async runUpdate(plugin = "") {
+  async runUpdate(plugin = "", force = false) {
     this.isNowUp = false;
 
     let cm = "git pull --ff-only";
 
     let type = "更新";
-    const isForce = this.e.msg.includes("强制");
+    // force=true 供 #全部更新 调用(全部更新本身即强制语义,对齐远端)
+    const isForce = force || this.e.msg.includes("强制");
     if (isForce) {
       type = "强制更新";
       // 按实际分支重置(勿写死 origin/main),插件目录需加 -C 前缀
@@ -335,7 +336,8 @@ export class update extends plugin {
       plu = this.getPlugin(plu);
       if (plu === false) continue;
       await common.sleep(1500);
-      await this.runUpdate(plu);
+      // 全部更新本身即强制语义:对齐远端(配置由 stash 保护,不丢)
+      await this.runUpdate(plu, true);
     }
 
     if (this.isUp) {
