@@ -169,10 +169,14 @@ export class update extends plugin {
       const logRet = await this.execSync(`git -C "${dir}" log origin/${branch}..HEAD --pretty=%s`);
       if (logRet.error || !logRet.stdout.trim()) return;
       const subjects = lodash.trim(logRet.stdout).split("\n");
-      // 领先提交里只要有一个不是自动提交,就不动
-      if (subjects.some((s) => !s.includes("自动提交本地改动"))) return;
+      // 旧更新链产生的本地垃圾提交:
+      //  - "自动提交本地改动"(旧 preCommit 方案)
+      //  - "Merge branch ..."(旧 pull --no-rebase 在分叉时自动产生的合并提交)
+      // 领先提交里只要有一个不属于上述垃圾,就不动
+      const junkRe = /自动提交本地改动|^Merge branch '.*'(?:(?!GitLab|github|gitee).)*$/i;
+      if (subjects.some((s) => !junkRe.test(s))) return;
       await this.execSync(`git -C "${dir}" reset --hard origin/${branch}`);
-      logger.mark(`[更新] ${plugin || "本体"} 已清理 ${subjects.length} 个历史自动提交，对齐远端`);
+      logger.mark(`[更新] ${plugin || "本体"} 已清理 ${subjects.length} 个历史自动提交/合并残留，对齐远端`);
     } catch (err) {
       logger.debug(`[更新] ${plugin || "本体"} 自动清理本地提交失败：${err.message}`);
     }
