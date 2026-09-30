@@ -428,6 +428,17 @@ export default class MysNews extends base {
     this.key = "Yz:genshin:mys:newPush:";
     this.e.isGroup = true;
     this.pushGroup = [];
+    // 推送群配置兼容:支持数组、{botId:[群号]} 对象或单个群号,统一平铺为群号列表
+    const toGroupIds = (v) =>
+      Array.isArray(v)
+        ? v
+        : v && typeof v === "object"
+          ? Object.values(v).flat()
+          : v
+            ? [v]
+            : [];
+    const announceIds = toGroupIds(cfg.announceGroup);
+    const infoIds = toGroupIds(cfg.infoGroup);
     for (let val of news) {
       if (Number(now - val.post.created_at) > interval) {
         continue;
@@ -436,12 +447,12 @@ export default class MysNews extends base {
         continue;
       }
       if (val.typeName == "公告") {
-        for (let groupId of (cfg.announceGroup || [])) {
+        for (let groupId of announceIds) {
           await this.sendNews(groupId, val.typeName, val.post.post_id);
         }
       }
       if (val.typeName == "资讯") {
-        for (let groupId of (cfg.infoGroup || [])) {
+        for (let groupId of infoIds) {
           await this.sendNews(groupId, val.typeName, val.post.post_id);
         }
       }

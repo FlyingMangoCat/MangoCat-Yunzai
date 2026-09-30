@@ -146,6 +146,11 @@ export class mysNews extends plugin {
       typeName = "资讯";
     }
 
+    // 配置模板里推送群为 {}(对象形状),统一转数组便于 push/uniq/difference 维护
+    if (!Array.isArray(cfg[type])) {
+      cfg[type] = cfg[type] && typeof cfg[type] === "object" ? lodash.flatten(Object.values(cfg[type])) : [];
+    }
+
     let model;
     let msg = `崩坏星穹铁道${typeName}推送已`;
     if (this.e.msg.includes("开启")) {
@@ -183,6 +188,11 @@ export class mysNews extends plugin {
     if (this.e.msg.includes("资讯")) {
       type = "infoGroup";
       typeName = "资讯";
+    }
+
+    // 配置模板里推送群为 {}(对象形状),统一转数组便于 push/uniq/difference 维护
+    if (!Array.isArray(cfg[type])) {
+      cfg[type] = cfg[type] && typeof cfg[type] === "object" ? lodash.flatten(Object.values(cfg[type])) : [];
     }
 
     let model;
