@@ -1,6 +1,7 @@
 import lodash from 'lodash'
 import fs from 'node:fs'
 import util from 'node:util'
+import { pathToFileURL } from 'node:url'
 const rootPath = process.cwd() + '/plugins/genshin'
 
 const _path = rootPath
@@ -134,7 +135,9 @@ let Data = {
     }
     if (fs.existsSync(`${root}/${file}`)) {
       try {
-        let data = await import(`file://${root}/${file}?t=${new Date() * 1}`)
+        // pathToFileURL 转 file:// URL,全平台可用;Windows 下直接拼
+        // file://D:/... 会把 D: 当协议报 ERR_UNSUPPORTED_ESM_URL_SCHEME
+        let data = await import(pathToFileURL(`${root}/${file}`).href + `?t=${new Date() * 1}`)
         return data || {}
       } catch (e) {
         console.error(`import module错误: ${root}/${file}`)
