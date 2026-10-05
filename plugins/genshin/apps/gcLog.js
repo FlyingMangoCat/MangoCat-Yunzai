@@ -109,7 +109,8 @@ export class gcLog extends plugin {
     let file = ["./data/gachaJson", "./data/srJson", "./data/html/StarRail"];
     for (let i of file) {
       if (!fs.existsSync(i)) {
-        fs.mkdirSync(i);
+        // recursive 创建,父目录(如 ./data/html)不存在时也能一次建成
+        fs.mkdirSync(i, { recursive: true });
       }
     }
   }
