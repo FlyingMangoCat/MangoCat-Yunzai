@@ -7,8 +7,7 @@ Bot.getGroupMemberInfo = (group_id, user_id) =>
   Bot[Bot.uin]?.pickMember(group_id, user_id)?.getInfo(true, true)
 /* ------ 兼容层结束 ------ */
 
-Bot.adapter.push(
-  new (class OneBotv11Adapter {
+let OneBotv11Adapter = new (class OneBotv11Adapter {
     id = "QQ"
     name = "OneBotv11"
     path = this.name
@@ -1581,5 +1580,7 @@ Bot.adapter.push(
         ws.on("message", data => this.message(data, ws, ...args)),
       )
     }
-  })(),
-)
+  })()
+
+Bot.adapter.push(OneBotv11Adapter)
+export { OneBotv11Adapter }

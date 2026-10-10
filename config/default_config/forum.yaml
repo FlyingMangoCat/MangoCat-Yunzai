@@ -1,0 +1,8 @@
+# 榴莲论坛开放平台（正向 WebSocket 客户端）
+# 平台侧申请 Token 并经管理员审批后填入
+# 服务地址，示例：wss://api-forum.liulian-ai.top/api/bot
+url:
+# Bot 访问令牌
+token:
+# 断线重连间隔（秒）
+reconnect: 5
