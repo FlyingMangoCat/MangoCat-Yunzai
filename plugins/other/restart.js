@@ -91,21 +91,10 @@ export class Restart extends plugin {
   }
 
   async stop() {
-    if (process.env.app_type !== "pm2") {
-      logger.mark("关机成功，已停止运行");
-      await this.e.reply("关机成功，已停止运行");
-      process.exit();
-    }
-
+    // 统一走 Bot.exit()：先关渲染器浏览器（Chromium 是独立子进程，进程被杀不会带走它，会泄漏堆积）
+    // 再清内置 redis；pm2 分支由 Bot.exit 内部执行 pnpm stop
     logger.mark("关机成功，已停止运行");
     await this.e.reply("关机成功，已停止运行");
-
-    let npm = await this.checkPnpm();
-    exec(`${npm} stop`, { windowsHide: true }, (error, stdout, stderr) => {
-      if (error) {
-        this.e.reply(`操作失败！\n${error.stack}`);
-        logger.error(`关机失败\n${error.stack}`);
-      }
-    });
+    await Bot.exit();
   }
 }
