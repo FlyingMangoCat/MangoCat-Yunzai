@@ -10,6 +10,21 @@ const { exec, execSync } = require("child_process");
 
 let uping = false;
 
+/**
+ * 更新源表：本体与 liulian-plugin 各有 Gitee/GitCode 两个公开镜像
+ * pull 报凭据类错误（远端异常要求登录/风控）时按序换源重试，全部失败才报错
+ */
+const UPDATE_SOURCES = {
+  "MangoCat-Yunzai": [
+    "https://gitee.com/huifeidemangguomao/MangoCat-Yunzai",
+    "https://gitcode.com/huifeidemangguomao/MangoCat-Yunzai",
+  ],
+  "liulian-plugin": [
+    "https://gitee.com/huifeidemangguomao/liulian-plugin",
+    "https://gitcode.com/huifeidemangguomao/liulian-plugin",
+  ],
+};
+
 export class update extends plugin {
   constructor() {
     super({
@@ -220,6 +235,16 @@ export class update extends plugin {
     let ret = await this.execSync(cm);
     uping = false;
 
+    // 凭据类报错（远端异常要求登录）自动换源重试：本体与绑定插件有多个公开镜像
+    if (ret.error && this.isAuthError(ret)) {
+      const switched = await this.switchSource(plugin);
+      if (switched) {
+        uping = true;
+        ret = await this.execSync(cm);
+        uping = false;
+      }
+    }
+
     if (ret.error) {
       // pull 失败也要把暂存的改动放回,不弄丢用户数据
       if (stashed) await this.postRestore(plugin);
@@ -256,6 +281,45 @@ export class update extends plugin {
     logger.mark(`${this.e.logFnc} 最后更新时间：${time}`);
 
     return true;
+  }
+
+  /**
+   * 是否凭据类错误：公开仓库匿名拉取本不需要登录，
+   * 报"要求输入用户名"说明远端不可匿名读（remote 被改错/被风控），可尝试换源
+   */
+  isAuthError(ret) {
+    const msg = String(ret.error || "") + String(ret.stderr || "");
+    return /could not read Username|terminal prompts disabled/i.test(msg);
+  }
+
+  /**
+   * 凭据类报错时按源表依次换源重试：
+   * 逐个 set-url 后用 ls-remote 探测可用性，可用即返回（保留新源）；
+   * 全部不可用则恢复原 remote，交回外层走原报错流程。
+   * @param {string} plugin 插件名（空=本体主仓库），不在源表中的仓库不换源
+   * @returns {Promise<boolean>} 是否成功切换到可用源
+   */
+  async switchSource(plugin = "") {
+    const key = plugin || "MangoCat-Yunzai";
+    const sources = UPDATE_SOURCES[key];
+    if (!sources) return false;
+    const dir = plugin ? `./plugins/${plugin}` : ".";
+    const curRet = await this.execSync(`git -C "${dir}" remote get-url origin`);
+    const cur = curRet.error ? "" : lodash.trim(curRet.stdout);
+    if (!cur) return false;
+    for (const url of sources) {
+      if (url === cur) continue;
+      await this.execSync(`git -C "${dir}" remote set-url origin "${url}"`);
+      const probe = await this.execSync(`git -C "${dir}" ls-remote origin HEAD`);
+      if (!probe.error) {
+        logger.mark(`[更新] ${key} 已换源：${url}`);
+        return true;
+      }
+      logger.mark(`[更新] ${key} 源不可用：${url}`);
+    }
+    // 所有候选源都不通，恢复原 remote，外层按原样报错
+    await this.execSync(`git -C "${dir}" remote set-url origin "${cur}"`);
+    return false;
   }
 
   async getcommitId(plugin = "") {

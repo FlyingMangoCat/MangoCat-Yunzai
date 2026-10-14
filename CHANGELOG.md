@@ -1,5 +1,11 @@
  # 3.2.3
 
+ * 修复：运行环境判断缺少本版本，显示名错误修正为 MangoCat-Yunzai
+   * 运行环境名判断未包含 MangoCat-Yunzai，命中兜底分支导致显示名错误，现本版本显示 MangoCat-Yunzai
+   * 导出记录 `export_app` 同理修正，并新增本名显式映射（原先经 `_.capitalize` 会变成 `Mangocat-yunzai`）
+ * 新增：更新失败自动换源重试ⁿᵉʷ
+   * 本体与 liulian-plugin 各配置 Gitee/GitCode 双公开镜像，`git pull` 报凭据类错误（远端异常要求登录/被风控）时按序自动换源并重试，无需手动处理
+   * 探测到可用源后保留为新 remote；所有源均不可用时恢复原 remote 并按原样报错
  * 修复：米游社公告接口 404
    * `getNewsList` 迁移至新域名与路径（bbs-api-static.miyoushe.com/painter/wapi），原/星铁公告推送恢复正常
  * 新增：OneBotv11 群待办接口ⁿᵉʷ
