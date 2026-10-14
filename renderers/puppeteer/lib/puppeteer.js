@@ -144,6 +144,11 @@ export default class Puppeteer extends Renderer {
   }
 
   async screenshot(name, data = {}) {
+    return Renderer.withTpl(name, data, () => this.captureScreenshot(name, data))
+  }
+
+  /** 执行已取得模板路径锁的截图 */
+  async captureScreenshot(name, data = {}) {
     if (!(await this.browserInit())) return false
     const pageHeight = data.multiPageHeight || 4000
 
