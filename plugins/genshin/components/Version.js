@@ -85,8 +85,8 @@ if (packageJson.name === 'miao-yunzai') {
   name = 'Miao-Yunzai'
 } else if (packageJson.name === 'trss-yunzai') {
   isMiao = true
-  name = 'TRSS-Yunzai'
-} 
+  name = 'MangoCat-Yunzai'
+}
 else if (packageJson.name === 'a-yunzai') {
   isMiao = true
   name = 'A-Yunzai'

@@ -76,12 +76,14 @@ export default class ExportLog extends base {
 
     let list = this.getAllList().list
     let yunzaiName = cfg.package.name
-    if (yunzaiName == "miao-yunzai") {
+    if (yunzaiName == "MangoCat-Yunzai") {
+      yunzaiName = "MangoCat-Yunzai"
+    } else if (yunzaiName == "miao-yunzai") {
       yunzaiName = "Miao-Yunzai"
     } else if (yunzaiName == "yunzai") {
       yunzaiName = "Yunzai-Bot"
     } else if (yunzaiName == "trss-yunzai") {
-      yunzaiName = "TRSS-Yunzai"
+      yunzaiName = "MangoCat-Yunzai"
     } else {
       yunzaiName = _.capitalize(yunzaiName)
     }
