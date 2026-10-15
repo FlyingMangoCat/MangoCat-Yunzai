@@ -43,7 +43,7 @@ export class update extends plugin {
           permission: "master",
         },
         {
-          reg: "^#(强制)*更新(.*)",
+          reg: "^#(强制)?更新",
           fnc: "update",
         },
       ],
