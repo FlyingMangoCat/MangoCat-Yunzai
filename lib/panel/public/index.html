@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FMC-Yunzai 管理面板</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div class="auth-wrap hidden" id="authView">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M4 14c0-4.4 3.6-8 8-8s8 3.6 8 8"/><path d="M4 14h4l2 3h4l2-3h4"/><path d="M8 10h.01M16 10h.01"/></svg>
+        <strong>FMC-Yunzai</strong>
+      </div>
+      <p class="auth-sub" id="authSub">管理面板</p>
+      <form id="authForm" autocomplete="off">
+        <div class="field">
+          <label for="authPassword" id="authLabel">面板密码</label>
+          <input class="input" type="password" id="authPassword" autocomplete="current-password" />
+        </div>
+        <div class="field hidden" id="authConfirmField">
+          <label for="authConfirm">确认密码</label>
+          <input class="input" type="password" id="authConfirm" autocomplete="new-password" />
+        </div>
+        <div id="authError" class="auth-error"></div>
+        <button class="btn primary" type="submit" id="authSubmit" style="width:100%;justify-content:center;height:34px">登录</button>
+      </form>
+      <p class="auth-hint" id="authHint"></p>
+    </div>
+  </div>
+
+  <div class="app hidden" id="appView">
+    <header class="header">
+      <div class="brand"><span class="dot" id="onlineDot"></span>FMC-Yunzai</div>
+      <div class="header-status" id="headerStatus"></div>
+      <div class="header-right">
+        <button class="btn small" id="btnRefresh">刷新</button>
+        <button class="btn small" id="btnAccount">账号</button>
+      </div>
+    </header>
+    <div class="body">
+      <nav class="side" id="sideNav"></nav>
+      <main class="main" id="mainView"></main>
+    </div>
+  </div>
+
+  <div id="modalRoot"></div>
+  <div id="toastRoot"></div>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

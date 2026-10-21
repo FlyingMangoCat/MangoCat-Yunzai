@@ -1,0 +1,21 @@
+# FMC-Yunzai 管理面板（挂载在本体 HTTP 服务的 /panel 路径下）
+panel:
+  enable: true              # 总开关，false 时面板路由整体返回 404
+  tokenExpire: 43200        # 登录态有效期（秒），默认 12 小时
+  loginFailLimit: 5         # 10 分钟内失败次数上限，超过后该来源暂时禁止登录
+  confirmTimeout: 120       # 安装/卸载/更新插件时等待主人私聊确认的秒数
+
+  # 插件收录台账（唯一审计记录来源）
+  ledger:
+    url: "https://gitee.com/huifeidemangguomao/yunzai-one-button/raw/master/include.md"
+    localPath: ""           # 填写本地 include.md 绝对路径时优先读取本地，留空只读远端
+    cacheMinutes: 30        # 台账缓存时长（分钟），过期后重新拉取
+
+  # 插件安装
+  install:
+    allow: true             # 是否允许面板安装插件
+    domains:                # 允许的仓库域名，避免面板被当作任意地址下载器
+      - github.com
+      - gitee.com
+      - gitlab.com
+      - gitcode.com
