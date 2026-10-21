@@ -1,0 +1,4 @@
+# 敏感插件操作门禁
+sensitiveOps:
+  enable: true      # 总开关，false 关闭
+  trustWindow: 600  # 同一次面板会话内的后续操作免确认的秒数
