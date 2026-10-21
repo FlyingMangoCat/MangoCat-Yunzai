@@ -13,7 +13,7 @@
    * 路径先解码再转小写后匹配，大写 `/API/...` 之类的大小写绕过同样拦截
    * 面板内的安装/更新/卸载复用同一确认；修改主人 QQ、黑白名单等关键权限字段也需私聊确认
 
-# 3.2.4
+ # 3.2.4
  * 修复：并发截图可能互相覆盖错乱
    * 同一模板路径的截图请求改为串行执行，上一个截图读取完毕后才允许覆盖写入模板文件，不同模板仍并发不受影响
  * 修复：运行环境判断缺少本版本，显示名错误修正为 MangoCat-Yunzai
@@ -53,7 +53,7 @@
    * `runtime.js` 构造器补齐 `this.handler` 挂载（`has`/`call`/`callAll`），修复 ZZZ-plugin 等访问 `e.runtime.handler.has` 报 `TypeError: handler.has is not a function`
    * `plugin.js` 构造器支持 `handler`/`namespace` 参数（插件可声明 handler 事件）
 
-# 3.2.3
+ # 3.2.3
    * `loader.js` 插件加载/热更新时 `Handler.add` 注册 handler 事件，卸载时 `Handler.del` 注销，补全 handler 完整链路
  * 优化：命令执行保护层更新类命令静默放行
    * `git pull`/`pnpm install` 等更新命令与 `-v`/`--version` 版本检查命令直接放行不打扰，危害命令仍照常拦截
@@ -250,7 +250,7 @@
 
  * 新增`版本`ⁿᵉʷ
 
- # 0.0.0
+ # 3.0.0
 
  * 芒果猫
  
