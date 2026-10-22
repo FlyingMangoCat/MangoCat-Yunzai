@@ -19,3 +19,8 @@ proxyAddress:
 online_msg: true
 # 上线推送通知的冷却时间
 online_msg_exp: 86400
+
+# HTTP 服务配置
+server:
+  # 未被匹配的路径的兜底重定向地址，默认直达管理面板（不再回落到外部站点）
+  redirect: /panel/

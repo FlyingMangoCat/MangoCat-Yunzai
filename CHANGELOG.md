@@ -1,5 +1,7 @@
  # 3.2.5
 
+ * 优化：默认配置的 HTTP 根路径重定向指向管理面板
+   * `config/default_config/bot.yaml` 显式提供 `server.redirect: /panel/`，全新部署访问本体端口根路径直达管理面板，不再回落到 TRSS 官网默认地址；已部署环境如被旧行为影响，把自有 `config/config/bot.yaml` 的 `server.redirect` 改为 `/panel/` 即可
  * 新增：Web 管理面板 FMC-Yunzaiⁿᵉʷ
    * 挂在 HTTP 服务的 `/panel` 路径下，复用本体端口；只有登录与初始化接口免鉴权，其余接口走 JWT，登录态限时并对来源失败次数限流
    * 主页：在线上号、今日消息、台账条目、插件信任概览（官方/已收录/未收录三档）、最近敏感操作
