@@ -1,5 +1,8 @@
  # 3.2.5
 
+ * 修复：插件写保护误拦插件自配置文件
+   * `config/` 目录的写保护收窄为本体自有配置：`config/config`（用户配置）、`config/default_config`（模板）、`config/pm2`、`config/test` 照旧拦截，本体代码、`.git` 与关键权限字段（masterQQ/黑白名单）保护不变
+   * `config/` 根的单文件 yaml/yml/json（插件自配置的惯例位置，如 `config/zmd-plugin.yaml`）放行；本体控制面不读取这些文件，插件保存自身配置不再触发极度危险通报
  * 优化：默认配置的 HTTP 根路径重定向指向管理面板
    * `config/default_config/server.yaml` 的 `redirect` 默认值改为 `/panel/`，全新部署访问本体端口根路径直达管理面板；已部署环境如需同样效果，把自有 `config/config/server.yaml` 的 `redirect` 改为 `/panel/` 即可
  * 新增：Web 管理面板 FMC-Yunzaiⁿᵉʷ
