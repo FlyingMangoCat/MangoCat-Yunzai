@@ -2,3 +2,17 @@
 sensitiveOps:
   enable: true      # 总开关，false 关闭
   trustWindow: 600  # 同一次面板会话内的后续操作免确认的秒数
+
+# 插件静态特征审计
+pluginAudit:
+  # observe：默认只记录，不阻断；确定性后门/RCE/固定身份授权/核心篡改/审计异常仍拦截
+  # enforce：block 级 finding 阻止插件加载
+  mode: observe
+  # 按规则覆盖处置：off 关闭、record 只记录、notify 记录并私信、block 拦截
+  # 示例：auth.fixed-id-list: notify
+  # 后门/远程代码/核心篡改类规则不接受 off/放行
+  rules: {}
+  # 误报放行：data/security/allowlist.json
+  # 只按单条 finding 的定位键放行，不按插件/规则批量静音：
+  # [{"findingKey":"记录里的定位键","reason":"说明"}]
+  # 文件内容变化后定位键变化，放行自动失效。
