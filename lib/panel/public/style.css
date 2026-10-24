@@ -191,6 +191,8 @@ button { font: inherit; color: inherit; }
 .badge.amber { background: var(--amber-soft); color: var(--amber); border-color: #ecd9a8; }
 .badge.red { background: var(--red-soft); color: var(--red); border-color: #f0c9c6; }
 .badge.blue { background: var(--accent-soft); color: var(--accent); border-color: #c8d9fb; }
+.badge-unaudited { cursor: pointer; color: var(--amber); border-color: #ecd9a8; }
+.badge-unaudited:hover { background: var(--amber-soft); }
 
 .input, .select, .textarea {
   width: 100%;
