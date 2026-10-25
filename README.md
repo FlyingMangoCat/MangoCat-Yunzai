@@ -1,12 +1,12 @@
 # MangoCat-Yunzai v3 [Gitee](https://gitee.com/huifeidemangguomao/MangoCat-Yunzai.git)
 
-基于[Yunzai-Bot](https://gitee.com/le-niao/Yunzai-Bot) 改造
+基于[Yunzai-Bot](https://gitee.com/le-niao/Yunzai-Bot)&[Miao-Yunzai v3.0](https://gitee.com/yoimiya-kokomi/Miao-Yunzai)改造
 
 需要同时安装[liulian-plugin](https://github.com/FlyingMangoCat/liulian-plugin.git)
 
 项目仅供学习交流使用，严禁用于任何商业用途和非法行为
 
-## 使用方法
+## 使用方法（[一键安装脚本](https://gitee.com/huifeidemangguomao/yunzai-one-button)）
 
 > 环境准备： Windows or Linux，Node.js（ [版本至少v16以上](http://nodejs.cn/download/) ）， [Redis](https://redis.io/docs/getting-started/installation/ )
 
