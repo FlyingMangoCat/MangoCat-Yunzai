@@ -8,7 +8,7 @@
 
 ## 使用方法（[一键安装脚本](https://gitee.com/huifeidemangguomao/yunzai-one-button)）
 
-> 环境准备： Windows or Linux，Node.js（ [版本至少v16以上](https://nodejs.cn/en/download) ）， [Redis](https://redis.io/docs/getting-started/installation/ )
+> 环境准备： Windows or Linux，Node.js（ [版本至少v20.6以上](https://nodejs.cn/en/download) ）， [Redis](https://redis.io/docs/getting-started/installation/ )
 
 1.克隆项目并安装liulian-plugin
 
@@ -93,11 +93,11 @@ linux环境，其他环境请自行探索
     puppeteer Chromium 启动中...
     Error: Failed to launch the browser process!
 ```
-1. 先检查node版本是否大于14 (不大于14请去升级版本)
+1. 先检查node版本是否大于20.6 (不满足请去升级版本)
 ```sh
     node -v
 ```
-2. 如果大于14 则可能是缺失一些库 请安装这些 (点击代码块右上角直接复制,如果报错可以尝试 sudo)
+2. 如果大于20.6 则可能是缺失一些库 请安装这些 (点击代码块右上角直接复制,如果报错可以尝试 sudo)
 
 ### 依赖库
 ```sh
