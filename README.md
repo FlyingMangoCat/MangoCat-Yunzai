@@ -57,6 +57,22 @@ pnpm install -P
 node app
 ```
 
+## 协议端接入
+
+除内置 icqq 外，支持通过 OneBotv11 适配器接入 NapCat、LLOneBot、Lagrange 等协议端：
+
+1. 在协议端配置反向 WebSocket（reverse WS），地址填 `ws://127.0.0.1:25527/OneBotv11`（端口为本体 HTTP 服务端口，见 `config/server.yaml`）
+2. 若在 `config/server.yaml` 的 `auth` 中配置了鉴权，需在协议端填入对应的 access token
+3. 重启本体的同时启动协议端，看到连接成功日志即可
+
+## Web 管理面板
+
+本体自带管理面板，默认开启，浏览器访问 `http://127.0.0.1:25527/panel/`（本体的 HTTP 服务端口）。
+
+- 首次访问按页面提示设置面板密码
+- 支持插件管理（可选一键安装收录插件）、配置修改、资源监控、运行日志查看等
+- 敏感操作（安装/卸载插件、修改主人 QQ 与黑白名单等）会向主人 QQ 私聊发确认请求
+  - 面板总开关等配置见 `config/default_config/panel.yaml`
 
 ## 常见问题
 
