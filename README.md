@@ -8,7 +8,7 @@
 
 ## 使用方法（[一键安装脚本](https://gitee.com/huifeidemangguomao/yunzai-one-button)）
 
-> 环境准备： Windows or Linux，Node.js（ [版本至少v16以上](http://nodejs.cn/download/) ）， [Redis](https://redis.io/docs/getting-started/installation/ )
+> 环境准备： Windows or Linux，Node.js（ [版本至少v16以上](https://nodejs.cn/en/download) ）， [Redis](https://redis.io/docs/getting-started/installation/ )
 
 1.克隆项目并安装liulian-plugin
 
