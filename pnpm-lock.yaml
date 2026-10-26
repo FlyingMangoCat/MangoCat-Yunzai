@@ -112,6 +112,9 @@ importers:
       art-template:
         specifier: 4.13.2
         version: 4.13.2
+      axios:
+        specifier: ^1.18.1
+        version: 1.18.1(debug@4.3.7(supports-color@7.2.0))(supports-color@7.2.0)
       canvas:
         specifier: ^3.1.0
         version: 3.2.3
@@ -160,6 +163,9 @@ importers:
       node-schedule:
         specifier: ^2.1.2
         version: 2.1.2
+      oicq:
+        specifier: npm:icqq@^0.6.10
+        version: icqq@0.6.10(debug@4.3.7(supports-color@7.2.0))(supports-color@7.2.0)
       pm2:
         specifier: ^6.0.8
         version: 6.0.8(supports-color@7.2.0)
@@ -214,7 +220,7 @@ importers:
         version: 0.0.4
       icqq:
         specifier: ^0.6.10
-        version: 0.6.10
+        version: 0.6.10(debug@4.3.7(supports-color@7.2.0))(supports-color@7.2.0)
       image-size:
         specifier: ^1.0.2
         version: 1.2.1
@@ -3155,7 +3161,6 @@ snapshots:
       debug: 4.4.3(supports-color@7.2.0)
     transitivePeerDependencies:
       - supports-color
-    optional: true
 
   agent-base@7.0.2(supports-color@7.2.0):
     dependencies:
@@ -4147,7 +4152,7 @@ snapshots:
 
   https-proxy-agent@5.0.1(supports-color@7.2.0):
     dependencies:
-      agent-base: 6.0.0(supports-color@7.2.0)
+      agent-base: 6.0.2(supports-color@7.2.0)
       debug: 4.4.3(supports-color@7.2.0)
     transitivePeerDependencies:
       - supports-color
