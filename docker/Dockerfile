@@ -32,7 +32,7 @@ RUN git config --global --add safe.directory '*' \
     && git config --global user.email "Yunzai@yunzai.bot" \
     && git config --global user.name "Yunzai"
 
-RUN npm install pnpm -g
+RUN corepack enable && corepack prepare pnpm@12.3.4 --activate
 
 RUN ln -s /usr/bin/python3 /usr/bin/python \
     && curl -fsSL https://install.python-poetry.org | python - \
@@ -51,7 +51,7 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
 RUN git clone --depth=1 --branch main https://gitee.com/huifeidemangguomao/MangoCat-Yunzai.git /app/MangoCat-Yunzai\
     && cd /app/MangoCat-Yunzai \
     && sed -i 's/127.0.0.1/redis/g' ./config/default_config/redis.yaml \
-    && pnpm install -P
+    && pnpm install -P --frozen-lockfile
 
 COPY --from=resource /res/entrypoint.sh /app/MangoCat-Yunzai/entrypoint.sh
 

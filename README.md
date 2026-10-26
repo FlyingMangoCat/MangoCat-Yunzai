@@ -27,17 +27,14 @@ cd MangoCat-Yunzai
 git clone https://gitee.com/huifeidemangguomao/liulian-plugin.git ./plugins/liulian-plugin/
 ```
 
-2.安装[pnpm](https://pnpm.io/zh/installation) ，已安装的可以跳过
+2.启用 pnpm（Node 自带 Corepack，已安装的可以跳过）
 
-* 使用npmjs.org安装
 ```
-npm install pnpm -g
+corepack enable
+corepack prepare pnpm@12.3.4 --activate
 ```
 
-* 指定国内源npmmirror.com安装
-```
-npm --registry=https://registry.npmmirror.com install pnpm -g
-```
+* 如果 Corepack 不可用，可参考 [pnpm 安装文档](https://pnpm.io/zh/installation) 手动安装 pnpm 12.3.4。
 
 3.安装依赖
 

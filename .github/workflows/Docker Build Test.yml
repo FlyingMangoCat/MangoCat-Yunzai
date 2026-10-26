@@ -20,7 +20,7 @@ jobs:
         run: docker compose up -d --build
 
       - name: Use Default Config
-        run: docker cp docker/qq.yaml yunzai-bot:/app/Yunzai-Bot/config/config
+        run: docker cp docker/qq.yaml yunzai-bot:/app/MangoCat-Yunzai/config/config
 
       - name: Run Test Script
-        run: docker exec yunzai-bot npm --prefix=/app/Yunzai-Bot run test
+        run: docker exec -w /app/MangoCat-Yunzai yunzai-bot pnpm run test
