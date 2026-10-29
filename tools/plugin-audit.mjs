@@ -9,17 +9,18 @@
  *   --since <rev>       增量审计：只扫 git diff <rev> 之后新增/修改的行（新文件全扫）
  *   --ratchet [路径]    棘轮门禁：与基线比对，出现新增命中即判红；修复则自动下调基线
  *   --accept            配合 --ratchet：把当前结果接受为新基线（有风险，会打印提示）
- *   --rules <json>      外部规则覆盖（缺省按 id 合并，json 里 replace:true 则整体替换）
+ *   --fail-on <level>   不带基线也能拦 CI：critical|high|medium|low，命中即 exit 1
+ *   --rules <json>      外部规则覆盖（缺省按 id 合并，disable 列表可关单条，replace:true 整份替换）
  *   --dump-rules <json> 导出当前内置规则为 JSON，改完可用 --rules 回灌
- *   --md <路径>         指定 Markdown 报告路径（多目标时自动加后缀）
+ *   --md <路径>         指定 Markdown 报告路径（多目标时当作前缀加插件名后缀）
  *   --no-md             只出终端结论，不写报告文件
  *   --json <路径>       额外输出 JSON
  *   --top <N>           终端最多显示 N 条（默认 15）
  *   --all-md            报告里列出全部命中，不按级别截断
  *
  * 分级：CRITICAL / HIGH / MEDIUM / LOW / PASS
- * 诚实边界：本工具做 S0 取证、S1 清点、S2 红线扫描、S3 数据流分诊；
- *          S4「定性」仍需人读源码，报告末尾固定输出盲区声明。
+ * 诚实边界：本工具做 S0 取证、S1 清点、S2 红线扫描、S3 可达性分诊（邻近 + 一跳变量，
+ *          不是完整数据流）；S4「定性」仍需人读源码，报告末尾固定输出盲区声明。
  */
 
 import fs from "node:fs";
@@ -31,7 +32,7 @@ import { execFileSync } from "node:child_process";
 const argv = process.argv.slice(2);
 const opts = {
   md: null, noMd: false, json: null, top: 15, allMd: false,
-  since: null, ratchet: null, accept: false, rules: null, dumpRules: null,
+  since: null, ratchet: null, accept: false, rules: null, dumpRules: null, failOn: null,
 };
 const targets = [];
 for (let i = 0; i < argv.length; i++) {
@@ -46,6 +47,7 @@ for (let i = 0; i < argv.length; i++) {
   else if (a === "--accept") opts.accept = true;
   else if (a === "--rules") opts.rules = argv[++i];
   else if (a === "--dump-rules") opts.dumpRules = argv[++i];
+  else if (a === "--fail-on") opts.failOn = argv[++i];
   else if (a === "--ratchet") {
     if (next() && !next().startsWith("-")) opts.ratchet = argv[++i];
     else opts.ratchet = "tools/plugin-audit-baseline.json";
@@ -130,16 +132,17 @@ const RULES = [
     hint: "注意：RegExp.exec() 是正则提取不是命令执行，已用负回顾排除 .exec(",
   },
   {
-    id: "RCE-CHILDPROC", family: "RCE", base: "MEDIUM", note: "引入 child_process",
+    id: "RCE-CHILDPROC", family: "RCE", base: "MEDIUM", note: "引入 child_process（仅能力，非调用）",
     re: /require\(\s*['"](?:node:)?child_process['"]\s*\)|from\s+['"](?:node:)?child_process['"]/g,
     fp: [],
-    hint: "文件具备执行命令的能力，需逐个调用点确认门禁",
+    sink: false,
+    hint: "只是具备执行能力，未见 sink 调用；不按 RCE 升级，需逐个调用点确认",
   },
   {
     id: "RCE-CHILDPROC-DOT", family: "RCE", base: "HIGH", note: "child_process 直调 exec/spawn",
-    re: /(?:child_?[pP]rocess|childProcess|\bcp)\s*\.\s*(?:exec|spawn|execSync|spawnSync|execFile)\s*\(/g,
+    re: /(?:child_?[pP]rocess|childProcess|\bcp)\s*\.\s*(?:exec|spawn|execSync|spawnSync|execFile)\b/g,
     fp: [],
-    hint: "确认命令串来源与门禁",
+    hint: "确认命令串来源与门禁；注意 promisify(childProcess.exec) 这种「传函数引用」也有执行能力",
   },
 
   /* —— 混淆 / 编码 —— */
@@ -166,21 +169,21 @@ const RULES = [
   {
     id: "SEC-SK", family: "凭据", base: "HIGH", note: "疑似 OpenAI 类密钥",
     re: /\bsk-[A-Za-z0-9_-]{16,}/g,
+    scope: "match",
     fp: [/sk-(?:xxx|test|your|placeholder|example|123456|abcdef)/i, /sk-\.\.\./, /sk-\$\{/],
     hint: "排除占位符后，真实个人密钥属红线；第三方公开 API 标识通常合规",
   },
   {
     id: "SEC-ASSIGN", family: "凭据", base: "MEDIUM", note: "凭据变量硬编码赋值",
     re: /(?:api[_-]?key|apikey|secret|token|password|passwd|cookie|bearer)\s*[:=]\s*['"][A-Za-z0-9_\-]{12,}['"]/gi,
-    fp: [
-      /\$\{\{/, /process\.env/, /\b(?:xxx|your|placeholder|example|changeme|demo|test|null|none)\b/i,
-      /\b(?:status|phase|type|name|version|path|url|host|port|id)\s*[:=]/i,
-    ],
+    scope: "match",
+    fp: [/\$\{\{/, /process\.env/, /\b(?:xxx|your|placeholder|example|changeme|demo|test|null|none)\b/i],
     hint: "需人工区分：真实凭据 / 第三方公开标识 / 占位符 / 仅字段名",
   },
   {
     id: "SEC-AUTHZ", family: "凭据", base: "MEDIUM", note: "Authorization 头硬编码",
     re: /Authorization\s*[:=]\s*['"][^'"\s]{12,}['"]/g,
+    scope: "match",
     fp: [/\$\{\{/, /process\.env/, /Bearer\s+\$\{/],
     hint: "同上",
   },
@@ -199,17 +202,11 @@ const RULES = [
     hint: "若与 user_id/比对同现，可能是隐藏授权；版本哈希、设备指纹等属正常",
   },
   {
-    id: "YZ-MASTERQQ", family: "云崽特有", base: "CRITICAL", note: "写死 QQ 进主人/白名单",
-    re: /masterQQ|master\s*\[|adminQQ|白名单/g,
+    id: "YZ-MASTERQQ", family: "云崽特有", base: "CRITICAL", note: "主人/管理名单里写死 QQ 号",
+    re: /\b(?:masterQQ|adminQQ|masterList|masters|master)\s*[:=]\s*\[[^\]]*\]/g,
     fp: [/^\s*(?:\/\/|\/\*|\*)/, /示例|样例|example|placeholder|请修改|改成|如[:：]/i],
-    hint: "需确认方括号内是否写死具体 QQ 号（写死他人 QQ = 红线）",
-    contextCheck: (lines, idx) => {
-      const chunk = lines
-        .slice(idx, idx + 4)
-        .filter((l) => !/^\s*(?:\/\/|\/\*|\*)/.test(l))
-        .join("\n");
-      return (chunk.match(/\b\d{5,11}\b/g) || []).length > 0;
-    },
+    hint: "只有方括号字面量里确有 QQ 形态数字才算；读取配置（cfg.masterQQ）本身完全正常",
+    contextCheck: (lines, idx, m) => /\b[1-9]\d{4,10}\b/.test(m || ""),
   },
 
   /* —— 数据外联 —— */
@@ -224,7 +221,6 @@ const RULES = [
     re: /(?:axios|fetch|https?\.request|https?\.get|request\s*\()\s*\(/g,
     fp: [],
     hint: "同文件内既有凭据又有外发调用时升级；需人工确认是否把凭据发给第三方",
-    fileLevel: true,
   },
 
   /* —— 其它 —— */
@@ -297,15 +293,23 @@ if (opts.dumpRules) {
 
 /* ─────────────── 工具函数 ─────────────── */
 
-function walk(dir, out = []) {
+function walk(dir, out = [], linkDirs = []) {
   let ents = [];
   try { ents = fs.readdirSync(dir, { withFileTypes: true }); } catch { return out; }
   for (const e of ents) {
     if (e.name.startsWith(".") && e.isDirectory() && e.name !== ".github") continue;
     const p = path.join(dir, e.name);
+    if (e.isSymbolicLink()) {
+      // 软链不能直接跳过：插件可以把代码放别处再用软链挂进来
+      let st = null;
+      try { st = fs.statSync(p); } catch { continue; }
+      if (st.isDirectory()) linkDirs.push(p);
+      else if (st.isFile()) out.push(p);
+      continue;
+    }
     if (e.isDirectory()) {
       if (SKIP_DIRS.has(e.name)) continue;
-      walk(p, out);
+      walk(p, out, linkDirs);
     } else if (e.isFile()) {
       out.push(p);
     }
@@ -427,6 +431,16 @@ function diffScope(dir, rev) {
 
 /* ─────────────── 扫描 ─────────────── */
 
+/** 用户输入被赋给哪些局部变量（一跳传播用，例如 const code = this.e.msg...） */
+const RE_INPUT_ASSIGN = /(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*[^;\n]*?(?:e\.msg|e\.raw_message|e\.message|msg\.replace|msg\.trim)/g;
+function collectInputVars(text) {
+  const set = new Set();
+  RE_INPUT_ASSIGN.lastIndex = 0;
+  let m;
+  while ((m = RE_INPUT_ASSIGN.exec(text)) !== null) set.add(m[1]);
+  return set;
+}
+
 function scanFile(relPath, text, allowedLines, profile) {
   const lines = text.split(/\r?\n/);
   const hits = [];
@@ -434,24 +448,31 @@ function scanFile(relPath, text, allowedLines, profile) {
   const fams = PROFILES[profile] || PROFILES.code;
   for (const rule of RULES) {
     if (!fams.has(rule.family)) continue;
-    if (minified && rule.family === "混淆") continue;
     for (let i = 0; i < lines.length; i++) {
       if (allowedLines && !allowedLines.has(i + 1)) continue;
       const line = lines[i];
       rule.re.lastIndex = 0;
       let m;
       while ((m = rule.re.exec(line)) !== null) {
-        if (rule.fp && rule.fp.some((f) => f.test(line))) break;
-        if (rule.contextCheck && !rule.contextCheck(lines, i)) break;
+        // fp 默认作用于整行；标了 scope:"match" 的规则只作用于命中片段，
+        // 否则「同一行里出现无关的 name:」会把真密钥整行吞掉
+        const target = rule.scope === "match" ? m[0] : line;
+        if (rule.fp && rule.fp.some((f) => f.test(target))) break;
+        if (rule.contextCheck && !rule.contextCheck(lines, i, m[0], target)) break;
         hits.push({
           rule: rule.id, family: rule.family, base: rule.base,
+          sink: rule.sink !== false, minified,
           line: i + 1, text: line.trim().slice(0, 200), note: rule.note, hint: rule.hint,
         });
         break;
       }
     }
   }
-  return { hits, minified, hasInput: RE_INPUT.test(text), hasGate: RE_GATE.test(text) };
+  return {
+    hits, minified,
+    hasInput: RE_INPUT.test(text), hasGate: RE_GATE.test(text),
+    inputVars: collectInputVars(text),
+  };
 }
 
 /** 取出从 startIdx 起的函数体（按花括号配平，最多 60 行） */
@@ -526,16 +547,29 @@ function scanIneffectiveDefense(relPath, text, allowedLines) {
   return hits;
 }
 
-/** S3：数据流分诊 —— 把静态命中升级/降级 */
+/**
+ * S3：可达性分诊（不是完整的「数据流」）
+ * 判据只有两层：① sink 所在行是否直接出现输入（含一跳变量）；② 文件内有无门禁。
+ * 声称"数据流"是不诚实的——跨函数、经文件/Redis 的多跳传播看不到，已列入盲区。
+ */
 function triage(fileRel, meta, defHits, filesWithCred) {
   const out = [];
+  const esc = (v) => v.replace(/[$]/g, "\\$");
+
   for (const h of [...meta.hits, ...defHits]) {
     let level = h.base;
     const why = [];
 
     if (h.family === "RCE") {
-      if (meta.hasInput) {
-        why.push("同文件存在用户输入源(e.msg 等)");
+      // 邻近：sink 行内直接出现输入源，或出现由输入源赋值的局部变量（一跳）
+      const near = RE_INPUT.test(h.text) ||
+        [...meta.inputVars].some((v) => new RegExp(`\\b${esc(v)}\\b`).test(h.text));
+
+      if (!h.sink) {
+        level = "MEDIUM";
+        why.push("只是具备执行能力（import/require），本行未见 sink 调用；不按 RCE 升级");
+      } else if (near) {
+        why.push("sink 行内直接出现用户输入（邻近命中）");
         if (!meta.hasGate) {
           level = "CRITICAL";
           why.push("同文件未发现主人/权限门禁（门禁可能在上层调用方，需人工确认）");
@@ -543,21 +577,34 @@ function triage(fileRel, meta, defHits, filesWithCred) {
           level = "HIGH";
           why.push("文件内有门禁痕迹，需确认是否覆盖该入口");
         }
+      } else if (meta.hasInput) {
+        level = "HIGH";
+        why.push("同文件有输入源，但不在该 sink 邻近/一跳内 —— 疑似，需人读确认是否可达");
       } else {
         level = "MEDIUM";
-        why.push("未在同文件发现用户输入源，可能为配置/常量驱动，需确认来源");
+        why.push("未见用户输入源，可能为配置/常量驱动，需确认来源");
       }
     }
 
     if (h.rule === "NET-CREDOUT") {
       if (!filesWithCred.has(fileRel)) continue;
-      level = "HIGH";
-      why.push("同文件既有凭据又有外发调用");
+      if (/(?:header|headers|params|data\s*:|body\s*:|Authorization|token|api[_-]?key|secret)/i.test(h.text)) {
+        level = "HIGH";
+        why.push("同文件既有凭据、外发调用的参数里也出现凭据相关字段");
+      } else {
+        level = "MEDIUM";
+        why.push("同文件有凭据与外发，但该调用未见凭据参数 —— 只是共现，未证明外传");
+      }
     }
 
     if (h.rule === "FS-DELETE" && RE_DATA_PATH.test(h.text)) {
       level = "HIGH";
       why.push("删除目标路径涉及 data/");
+    }
+
+    if (h.minified && h.family === "混淆") {
+      level = "MEDIUM";
+      why.push("命中位于压缩/打包文件（单行超长），多为第三方库；不能当无事发生，也不能当后门");
     }
 
     if (h.family === "云崽特有" && h.base === "CRITICAL") {
@@ -575,13 +622,14 @@ function audit(target) {
 
   const git = gitInfo(abs);
   const scope = opts.since ? diffScope(abs, opts.since) : null;
-  const allFiles = walk(abs);
+  const linkDirs = [];
+  const allFiles = walk(abs, [], linkDirs);
   const scannable = allFiles.filter((p) => SCAN_EXT.has(path.extname(p).toLowerCase()));
   const binaries = allFiles.filter((p) => BINARY_EXT.has(path.extname(p).toLowerCase()));
 
   const findings = [];
   const filesWithCred = new Set();
-  const skipped = [];
+  const skipped = linkDirs.map((d) => ({ file: path.relative(abs, d).replace(/\\/g, "/"), reason: "symlink-dir" }));
   const byProfile = { code: 0, config: 0, doc: 0, pkg: 0, skip: 0 };
   let scannedFiles = 0;
   let scopeFiles = 0;
@@ -641,7 +689,9 @@ function audit(target) {
           hint: "远端依赖不受 npm 审计约束", why: ["需核对目标仓库可信度"],
         });
       }
-      if (POPULAR_NPM.some((pop) => editDistance1(name, pop))) {
+      // 本身就在常用包名单里的不算仿冒（editDistance1("qs","ws") 会误伤真包）
+      if (!POPULAR_NPM.includes(name.toLowerCase()) && name.length >= 4 &&
+          POPULAR_NPM.some((pop) => editDistance1(name, pop))) {
         supply.push({
           level: "LOW", rule: "SUPPLY-TYPOSQUAT", family: "供应链", file: rel,
           line: 0, text: `${name}: ${ver}`, note: "包名与常用包近似（仿冒嫌疑）",
@@ -727,6 +777,7 @@ function applyRatchet(results) {
 /* ─────────────── 输出 ─────────────── */
 
 const BLIND_SPOTS = [
+  "可达性只算「邻近 + 一跳变量」：sink 参数经多层函数传递、或经文件/Redis 中转（例如先把用户代码写进文件、再把文件喂给 docker）看不到，此类必须人读",
   "运行时行为：远程下发授权列表、运行时下载后执行、依赖链深层钩子——静态看不到，需动态沙箱",
   "混淆语义：本工具只能报「存在混淆/编码」，解码后是本地签名算法还是后门载体，必须人读源码定性",
   "门禁位置：门禁判定以「同文件」为单位，若门禁在上层调用方（如统一 rule 注册处）会误判为无门禁",
@@ -735,6 +786,7 @@ const BLIND_SPOTS = [
   "本工具不联网：上游 HEAD 是否变更、依赖是否有 CVE 通告，需另跑 git ls-remote / npm audit",
   "增量模式（--since）只看改动行：改动行引用的旧变量/门禁可能不在扫描范围内",
   "「无效防御」是启发式：只能识别空转、原样返回、空正则、自替换这几类，判定仍需人读",
+  "压缩/打包文件里的混淆命中只降级不做判断，需确认是第三方库还是自打包",
 ];
 
 function renderTerminal(r) {
@@ -745,9 +797,11 @@ function renderTerminal(r) {
   L.push(`  版本   ${r.git.isGit ? `${r.git.head} (${r.git.date})` : "非 git 目录，哈希待核"}`);
   L.push(`  模式   ${r.scope ? `增量（自 ${r.scope.rev}）：变更文件 ${r.scope.files} 个${r.scope.error ? `（diff 失败：${r.scope.error}，未做增量过滤）` : ""}` : "全量"}`);
   L.push(`  规模   文件 ${r.stats.totalFiles}，已扫 ${r.stats.scannedFiles}/${r.stats.scannable}` +
-    `（code ${r.stats.byProfile.code || 0} / config ${r.stats.byProfile.config || 0} / doc ${r.stats.byProfile.doc || 0} / 低信号跳过 ${r.stats.byProfile.skip || 0}）` +
-    (r.stats.skipped.length ? `，过大跳过 ${r.stats.skipped.length}` : ""));
+    `（code ${r.stats.byProfile.code || 0} / config ${r.stats.byProfile.config || 0} / doc ${r.stats.byProfile.doc || 0} / 低信号跳过 ${r.stats.byProfile.skip || 0}）`);
   L.push(`  结论   CRITICAL ${r.counts.CRITICAL} | HIGH ${r.counts.HIGH} | MEDIUM ${r.counts.MEDIUM} | LOW ${r.counts.LOW}`);
+  if (r.stats.skipped.length) {
+    L.push(`  未扫   ${r.stats.skipped.length} 个（过大 / 不可读 / 软链目录），明细见报告`);
+  }
 
   const shown = r.findings.slice(0, opts.top);
   if (!shown.length) L.push(`\n  未发现命中。`);
@@ -759,6 +813,9 @@ function renderTerminal(r) {
   if (r.findings.length > shown.length) L.push(`\n  …另有 ${r.findings.length - shown.length} 条，见报告文件`);
   console.log(L.join("\n"));
 }
+
+/** Markdown 单元格转义：反引号会截断行内代码，竖线会破坏表格 */
+const mdCell = (s) => String(s || "").replace(/`/g, "'").replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
 
 function renderMarkdown(r, ratchetInfo) {
   const L = [];
@@ -788,9 +845,9 @@ function renderMarkdown(r, ratchetInfo) {
     L.push("| 规则 | 位置 | 命中内容 | 判定依据 |");
     L.push("| --- | --- | --- | --- |");
     for (const f of group.slice(0, cap)) {
-      const txt = (f.text || "").replace(/\|/g, "\\|").slice(0, 110);
-      const basis = [(f.why || []).join("；"), f.hint || ""].filter(Boolean).join(" —— ");
-      L.push(`| ${f.rule} | \`${f.file}${f.line ? ":" + f.line : ""}\` | \`${txt}\` | ${basis.replace(/\|/g, "\\|")} |`);
+      const txt = mdCell((f.text || "").slice(0, 110));
+      const basis = mdCell([(f.why || []).join("；"), f.hint || ""].filter(Boolean).join(" —— "));
+      L.push(`| ${f.rule} | \`${mdCell(f.file)}${f.line ? ":" + f.line : ""}\` | \`${txt}\` | ${basis} |`);
     }
     if (group.length > cap) L.push(`\n_（该级别另有 ${group.length - cap} 条，加 \`--all-md\` 展开）_`);
     L.push("");
@@ -837,6 +894,24 @@ if (results.length) {
 }
 
 let ratchet = null;
+if (opts.failOn) {
+  const want = String(opts.failOn).toLowerCase();
+  const atLeast = { critical: ["CRITICAL"], high: ["CRITICAL", "HIGH"], medium: ["CRITICAL", "HIGH", "MEDIUM"], low: ["CRITICAL", "HIGH", "MEDIUM", "LOW"] };
+  const levels = atLeast[want];
+  if (!levels) {
+    console.error(`\n[用法错误] --fail-on 只支持 critical|high|medium|low，收到: ${opts.failOn}`);
+    process.exitCode = 2;
+  } else {
+    const bad = results.filter((r) => !r.error).filter((r) => levels.some((lv) => (r.counts[lv] || 0) > 0));
+    if (bad.length) {
+      console.log(`\n===== 门禁（--fail-on ${want}）=====`);
+      console.log(`  ✗ ${bad.map((r) => r.name).join(", ")} 命中 ${levels.join("/")} 级问题`);
+      process.exitCode = 1;
+    } else {
+      console.log(`\n===== 门禁（--fail-on ${want}）=====\n  ✓ 未触及阈值`);
+    }
+  }
+}
 if (opts.ratchet) {
   ratchet = applyRatchet(results);
   console.log(`\n===== 棘轮门禁 =====`);
@@ -858,10 +933,33 @@ if (opts.ratchet) {
 }
 
 if (!opts.noMd) {
+  const used = new Set();
+  const day = new Date().toISOString().slice(0, 10);
   for (const r of results) {
     if (r.error) continue;
-    const out = opts.md && results.length === 1 ? opts.md : path.resolve(`audit-${r.name}-${new Date().toISOString().slice(0, 10)}.md`);
+    let out;
+    if (opts.md && results.length === 1) {
+      out = path.resolve(opts.md);
+    } else if (opts.md) {
+      // 多目标时 --md 当作"前缀"：<目录>/<前缀>-<插件名>.md，不再被静默忽略
+      const absMd = path.resolve(opts.md);
+      const ext = path.extname(absMd) || ".md";
+      const stem = path.basename(absMd, ext);
+      out = path.join(path.dirname(absMd), `${stem}-${r.name}${ext}`);
+    } else {
+      // 默认收到 audit-reports/，不污染当前目录
+      out = path.resolve("audit-reports", `audit-${r.name}-${day}.md`);
+    }
+    // 同名插件（两个目录都叫 plugin）不能互相覆盖
+    const base = out;
+    let n = 1;
+    while (used.has(out)) {
+      const ext = path.extname(base);
+      out = `${base.slice(0, -ext.length)}-${++n}${ext}`;
+    }
+    used.add(out);
     const info = ratchet?.results.find((x) => x.name === r.name);
+    fs.mkdirSync(path.dirname(out), { recursive: true });
     fs.writeFileSync(out, renderMarkdown(r, info), "utf8");
     console.log(`  报告：${out}`);
   }
