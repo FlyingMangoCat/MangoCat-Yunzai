@@ -1,0 +1,31 @@
+name: Plugin Audit
+
+on:
+  pull_request:
+    paths:
+      - "plugins/**"
+      - "tools/plugin-audit.mjs"
+      - "tools/plugin-audit-baseline.json"
+      - "scripts/**"
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出（需要完整历史做 diff）
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: 审计（平台无关脚本）
+        env:
+          BASE_REF: origin/${{ github.base_ref }}
+        run: bash scripts/ci-audit.sh

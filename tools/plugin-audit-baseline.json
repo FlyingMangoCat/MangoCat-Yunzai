@@ -1,0 +1,111 @@
+{
+ "version": 1,
+ "plugins": {
+  "adapter": {
+   "head": "c177db4",
+   "date": "2026-10-29",
+   "counts": {
+    "CRITICAL": 0,
+    "HIGH": 0,
+    "MEDIUM": 2,
+    "LOW": 0
+   },
+   "findings": [
+    "RCE-CHILDPROC|stdin.js",
+    "RCE-EXEC-PLAIN|stdin.js"
+   ]
+  },
+  "example": {
+   "head": "c177db4",
+   "date": "2026-10-29",
+   "counts": {
+    "CRITICAL": 0,
+    "HIGH": 0,
+    "MEDIUM": 0,
+    "LOW": 0
+   },
+   "findings": []
+  },
+  "games-template-plugin-zolay-liulian": {
+   "head": "c177db4",
+   "date": "2026-10-29",
+   "counts": {
+    "CRITICAL": 0,
+    "HIGH": 0,
+    "MEDIUM": 0,
+    "LOW": 0
+   },
+   "findings": []
+  },
+  "genshin": {
+   "head": "c177db4",
+   "date": "2026-10-29",
+   "counts": {
+    "CRITICAL": 0,
+    "HIGH": 1,
+    "MEDIUM": 7,
+    "LOW": 0
+   },
+   "findings": [
+    "FS-DELETE|components/Data.js",
+    "FS-DELETE|model/exportLog.js",
+    "FS-DELETE|model/gsCfg.js",
+    "FS-DELETE|model/user.js",
+    "MISC-PROTO|resources/script/g2plot.min.js",
+    "RCE-NEWFUNC|resources/script/g2plot.min.js"
+   ]
+  },
+  "liulian-plugin": {
+   "head": "7b8b1c8",
+   "date": "2026-10-29",
+   "counts": {
+    "CRITICAL": 0,
+    "HIGH": 6,
+    "MEDIUM": 6,
+    "LOW": 2
+   },
+   "findings": [
+    "FS-DELETE|apps/Q&A.js",
+    "FS-DELETE|apps/V3pluginManager.js",
+    "FS-DELETE|apps/pluginManager.js",
+    "NET-BAREIP|config/config/liulian/ai.yaml",
+    "NET-BAREIP|config/default_config/liulian/ai.yaml",
+    "NET-CREDOUT|apps/morningpaper.js",
+    "RCE-CHILDPROC|apps/admin.js",
+    "RCE-EXEC-PLAIN|apps/admin.js",
+    "SEC-ASSIGN|apps/morningpaper.js"
+   ]
+  },
+  "other": {
+   "head": "c177db4",
+   "date": "2026-10-29",
+   "counts": {
+    "CRITICAL": 0,
+    "HIGH": 6,
+    "MEDIUM": 4,
+    "LOW": 0
+   },
+   "findings": [
+    "RCE-CHILDPROC|restart.js",
+    "RCE-CHILDPROC|update.js",
+    "RCE-EXEC-PLAIN|restart.js",
+    "RCE-EXEC-PLAIN|update.js",
+    "RCE-EXEC|restart.js",
+    "RCE-EXEC|update.js"
+   ]
+  },
+  "system": {
+   "head": "c177db4",
+   "date": "2026-10-29",
+   "counts": {
+    "CRITICAL": 0,
+    "HIGH": 0,
+    "MEDIUM": 1,
+    "LOW": 0
+   },
+   "findings": [
+    "FS-DELETE|add.js"
+   ]
+  }
+ }
+}
