@@ -6,6 +6,10 @@
 
 项目仅供学习交流使用，严禁用于任何商业用途和非法行为
 
+## 文档
+
+- [插件生态与兼容契约 v0.1](./docs/plugin-contract.md)：兼容基线、安全门、收录与排名规则、治理方式
+
 ## 使用方法（[一键安装脚本](https://gitee.com/huifeidemangguomao/yunzai-one-button)）
 
 > 环境准备： Windows or Linux，Node.js（ [版本至少v20.6以上](https://nodejs.cn/en/download) ）， [Redis](https://redis.io/docs/getting-started/installation/ )
