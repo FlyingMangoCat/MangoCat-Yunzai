@@ -8,7 +8,9 @@
 
 ## 文档
 
+- [文档索引](./docs/README.md)：按角色找文档
 - [插件生态与兼容契约 v0.1](./docs/plugin-contract.md)：兼容基线、安全门、收录与排名规则、治理方式
+- [工程与工具流程](./docs/engineering-workflow.md)：审计脚本用法、插件收录检查、PR 要求
 
 ## 使用方法（[一键安装脚本](https://gitee.com/huifeidemangguomao/yunzai-one-button)）
 
