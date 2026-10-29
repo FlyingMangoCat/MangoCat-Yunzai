@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>预览：插件管理 · 分类+搜索（未接入实际实现）</title>
+<style>
+/* ===== 预览版样式：与面板 style.css 同一套变量，仅为调样式用 ===== */
+:root {
+  --bg: #f0f2f5; --panel: #ffffff; --line: #e4e7ec; --line-soft: #eef0f3;
+  --text: #24292f; --muted: #6e7781; --muted-2: #9aa3b2;
+  --accent: #3b6ef5; --accent-soft: #eef3fe;
+  --green: #1f9d61; --green-soft: #f0faf5;
+  --amber: #b07d10; --amber-soft: #fdf8ea;
+  --radius: 6px;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text);
+  font: 14px/1.6 -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; padding: 24px; }
+.mono { font-family: ui-monospace, Consolas, monospace; }
+.small { font-size: 12px; }
+.muted { color: var(--muted); }
+a { color: var(--accent); text-decoration: none; }
+
+.preview-banner {
+  background: var(--amber-soft); border: 1px dashed var(--amber); color: var(--amber);
+  border-radius: var(--radius); padding: 8px 14px; margin-bottom: 16px; font-size: 13px;
+}
+
+.page-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+.page-head h1 { font-size: 20px; margin: 0; }
+.badge { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 12px;
+  border: 1px solid var(--line); color: var(--muted); background: var(--panel); white-space: nowrap; }
+.badge.green { color: var(--green); border-color: transparent; background: var(--green-soft); }
+.badge.amber { color: var(--amber); border-color: transparent; background: var(--amber-soft); }
+.badge.blue  { color: var(--accent); border-color: transparent; background: var(--accent-soft); }
+
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+.card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.card-head h2 { font-size: 15px; margin: 0; }
+
+/* ===== 搜索栏 + 分类筛选 ===== */
+.toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+.search-wrap { position: relative; flex: 1 1 260px; max-width: 420px; }
+.search-wrap input {
+  width: 100%; padding: 7px 30px 7px 32px; border: 1px solid var(--line); border-radius: var(--radius);
+  font-size: 13px; background: var(--panel); color: var(--text); outline: none;
+}
+.search-wrap input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.search-wrap .icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--muted-2); }
+.search-wrap .clear { position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  border: none; background: none; color: var(--muted-2); cursor: pointer; font-size: 14px; padding: 2px 4px; display: none; }
+.search-wrap .clear:hover { color: var(--text); }
+
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip {
+  border: 1px solid var(--line); background: var(--panel); color: var(--muted);
+  border-radius: 14px; padding: 3px 12px; font-size: 12.5px; cursor: pointer; user-select: none;
+}
+.chip:hover { border-color: var(--accent); color: var(--accent); }
+.chip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.chip .n { opacity: .75; margin-left: 3px; }
+
+.result-line { font-size: 12.5px; color: var(--muted); margin: 0 0 10px; }
+
+/* ===== 分类分组 ===== */
+.group-head {
+  display: flex; align-items: center; gap: 8px; margin: 18px 0 8px; cursor: pointer;
+}
+.group-head:first-of-type { margin-top: 4px; }
+.group-head h3 { font-size: 13.5px; margin: 0; color: var(--text); }
+.group-head .count { font-size: 12px; color: var(--muted-2); }
+.group-head .arrow { color: var(--muted-2); font-size: 11px; transition: transform .15s; }
+.group-head.collapsed .arrow { transform: rotate(-90deg); }
+.group-head .rule { flex: 1; height: 1px; background: var(--line-soft); }
+
+table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.tbl th { text-align: left; font-weight: 500; color: var(--muted); font-size: 12px;
+  border-bottom: 1px solid var(--line); padding: 6px 10px; white-space: nowrap; }
+table.tbl td { padding: 8px 10px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+table.tbl tr:last-child td { border-bottom: none; }
+table.tbl tr:hover td { background: #fafbfc; }
+.empty { text-align: center; color: var(--muted-2); padding: 24px 0; }
+</style>
+</head>
+<body>
+
+<div class="preview-banner">预览版（静态样例数据，未接入实际实现）——确认布局/交互后我再改 app.js + ledger.js</div>
+
+<div class="page-head">
+  <h1>插件管理</h1>
+  <span class="badge green">台账 gitee</span>
+  <span class="muted small">收录台账样例 · 排名按 plugin-contract §5 公式</span>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <h2>收录插件</h2>
+    <div class="toolbar" style="margin-bottom:0; flex:1;">
+      <div class="chips" id="viewChips">
+        <span class="chip on" data-view="all">全部插件</span>
+        <span class="chip" data-view="new">最新收录</span>
+      </div>
+      <div class="search-wrap">
+        <span class="icon">🔍</span>
+        <input id="q" type="text" placeholder="搜索插件名 / 作者 / 简介…">
+        <button class="clear" id="clearBtn" title="清空">✕</button>
+      </div>
+      <div class="chips" id="chips"></div>
+      <div class="chips" id="dimChips" style="margin-left:auto">
+        <span class="chip on" data-dim="rank">按排名</span>
+        <span class="chip" data-dim="time">按时间</span>
+      </div>
+    </div>
+  </div>
+
+  <p class="result-line" id="resultLine"></p>
+
+  <div id="groups"></div>
+</div>
+
+<script>
+/* 样例数据：取自 include.md 真实条目。
+ * 排序字段按 docs/plugin-contract.md §5 补充：
+ * layer 合规层(L1/L2/L3，第一排序键)；platform+stars→口碑R；months=距最后提交月数→更新U；
+ * years=首提交年数→资历A；p=修正P(标签值)；includedAt=收录日期(最新收录窗用)；maintainer=维护者自产 */
+const catalog = [
+  { tier: "official", layer: "L3", name: "榴莲插件 (liulian-plugin)", author: "会飞的芒果猫", desc: "原神地下地图、B站推送、插件管理及原神/星铁猜角色、娶群友等群聊功能", type: "功能插件", checkDate: "2026-10-26", hash: "81653be", installed: true, platform: "gitee", stars: 320, months: 0, years: 2.5, p: [], includedAt: "2026-10-26" },
+  { tier: "official", layer: "L2", name: "老板魔改修仙 (personal-cultivation-version)", author: "白日梦工厂", desc: "Yunzai-Bot V3「修仙模拟器」独立维护分支", type: "娱乐插件", checkDate: "2026-10-26", hash: "bdfebd7", installed: false, platform: "gitee", stars: 12, months: 1, years: 0.5, p: [], includedAt: "2026-10-26" },
+  { tier: "audited", layer: "L2", name: "喵喵插件 (miao-plugin)", author: "喵喵", desc: "角色面板查询、素材资源等升级功能", type: "面板插件", checkDate: "2026-10-26", hash: "90c790b", installed: true, platform: "github", stars: 1500, months: 0, years: 4, p: [], includedAt: "2026-09-12" },
+  { tier: "audited", layer: "L1", name: "图鉴插件 (xiaoyao-cvs-plugin)", author: "C佬", desc: "提供原魔、食物、武器、角色等图鉴帮助", type: "图鉴插件", checkDate: "2026-10-26", hash: "a1b2c3d", installed: true, platform: "gitee", stars: 200, months: 3, years: 3.5, p: [], includedAt: "2026-08-01" },
+  { tier: "audited", layer: "L1", name: "AI语音本地生成 (vits_yunzai_plugin)", author: "sumght-z", desc: "基于vits本地生成原神/崩三语音", type: "语音插件", checkDate: "2026-10-22", hash: "1921227", installed: false, platform: "gitee", stars: 8, months: 8, years: 1, p: [-0.2], includedAt: "2026-10-22" },
+  { tier: "audited", layer: "L2", name: "ap-plugin", author: "渔火Arcadia", desc: "AI绘图插件，在QQ内使用 Stable Diffusion 生成图片", type: "绘图插件", checkDate: "2026-10-22", hash: "a5178e4", installed: false, platform: "github", stars: 400, months: 2, years: 3, p: [], includedAt: "2026-10-10" },
+  { tier: "audited", layer: "L1", name: "steam-plugin", author: "小叶", desc: "好友状态播报、查看库存、搜索游戏", type: "查询插件", checkDate: "2026-10-22", hash: "1562b56", installed: false, platform: "github", stars: 60, months: 30, years: 2, p: [], includedAt: "2026-05-20" },
+  { tier: "audited", layer: "L3", name: "维护者自产示例 (self-plugin)", author: "会飞的芒果猫", desc: "维护者自产示例：同公式，并列排最后，不进精选位", type: "功能插件", checkDate: "2026-10-29", hash: "cafefe0", installed: false, platform: "gitee", stars: 150, months: 0, years: 2, p: [], includedAt: "2026-10-29", maintainer: true },
+  { tier: "unknown", layer: "L1", name: "某未收录插件 (unknown-plugin)", author: "某人", desc: "未收录示例条目（不参与排名，仅台账在册）", type: "未分类", checkDate: "", hash: "", installed: false, platform: "gitee", stars: 0, months: 99, years: 0, p: [], includedAt: "" },
+];
+
+const tierBadge = (t) =>
+  t === "official" ? `<span class="badge green">官方</span>` :
+  t === "audited"  ? `<span class="badge blue">已收录</span>` :
+                     `<span class="badge amber">未审核</span>`;
+
+const state = { q: "", tag: "全部", view: "all", groupBy: "rank", collapsed: new Set() };
+
+/* ===== 排名规则：docs/plugin-contract.md §5，公式不做改动 ===== */
+const K = { github: 1000, gitee: 300 };
+const LAYER = { L3: 3, L2: 2, L1: 1 };
+
+function scoreOf(i) {
+  const k = K[i.platform] || K.gitee;
+  const R = Math.min(1, Math.log(1 + (i.stars || 0)) / Math.log(1 + k));
+  const U = i.months <= 6 ? 1 : i.months <= 12 ? 0.75 : i.months <= 24 ? 0.5 : 0.25;
+  const A = Math.min(1, (i.years || 0) / 3);
+  const P = Math.max(-0.5, (i.p || []).reduce((s, v) => s + v, 0));
+  return { R, U, A, P, score: 0.6 * R + 0.3 * U + 0.1 * A + P };
+}
+const sOf = (i) => i._s || (i._s = scoreOf(i));
+
+/* 主排序键：层 → Score → 资历 → 名称；未收录不参与排名（固定最后）；维护者自产并列排最后 */
+function rankSort(a, b) {
+  const la = a.tier === "unknown" ? 0 : LAYER[a.layer] || 0;
+  const lb = b.tier === "unknown" ? 0 : LAYER[b.layer] || 0;
+  if (la !== lb) return lb - la;
+  const dScore = sOf(b).score - sOf(a).score;
+  if (Math.abs(dScore) > 1e-9) return dScore;
+  if ((b.years || 0) !== (a.years || 0)) return (b.years || 0) - (a.years || 0);
+  if (!!a.maintainer !== !!b.maintainer) return a.maintainer ? 1 : -1;
+  return a.name.localeCompare(b.name, "zh");
+}
+
+/* 按时间分组的键：取检查日期的年月，免审/无日期归入「未审查」 */
+function timeKey(i) {
+  const m = (i.checkDate || "").match(/^(\d{4})-(\d{2})/);
+  return m ? `${m[1]} 年 ${m[2]} 月` : "未审查";
+}
+/* 时间分组按月份倒序（新的在前），未审查固定最后 */
+function timeSort(a, b) {
+  if (a === "未审查") return 1;
+  if (b === "未审查") return -1;
+  return b.localeCompare(a);
+}
+
+/* 标签清单（只做筛选，不做排序依据） */
+const TYPES = [...new Set(catalog.map((i) => i.type))];
+
+function row(i, rank) {
+  const s = sOf(i);
+  const breakdown =
+    `口碑 R=${s.R.toFixed(2)}（${i.platform} ${i.stars}★）/ ` +
+    `更新 U=${s.U.toFixed(2)}（${i.months <= 24 ? i.months + " 个月前提交" : "超 2 年未提交"}）/ ` +
+    `资历 A=${s.A.toFixed(2)}（首提交 ${i.years} 年）/ ` +
+    `修正 P=${s.P.toFixed(2)}${i.p?.length ? "（" + i.p.join("、") + "）" : "（无）"}`;
+  return `<tr>
+    <td class="mono small muted">${rank == null ? "—" : "#" + rank}</td>
+    <td>${tierBadge(i.tier)} <span class="badge">${i.layer}</span>${i.maintainer ? ` <span class="badge amber">自产</span>` : ""}<br><span class="mono">${i.name}</span> <span class="badge">${i.type}</span><br><span class="small muted">${i.desc}</span></td>
+    <td class="mono small" title="${breakdown}">${s.score.toFixed(3)}</td>
+    <td class="small muted">${i.author}</td>
+    <td class="mono small">${i.checkDate || "免审"}</td>
+    <td class="mono small">${i.hash || "—"}</td>
+    <td>${i.installed ? `<span class="badge green">已安装</span>` : `<span class="badge">未安装</span>`}</td>
+    <td><a class="small" href="javascript:void(0)">地址</a></td>
+  </tr>`;
+}
+
+const TABLE_HEAD = `<thead><tr><th>排名</th><th>插件</th><th>评分</th><th>作者</th><th>检查日期</th><th>审查版本</th><th>状态</th><th style="width:80px">下载</th></tr></thead>`;
+const tableHTML = (rows) => `<table class="tbl">${TABLE_HEAD}<tbody>${rows.join("")}</tbody></table>`;
+
+function render() {
+  /* 筛选：标签 + 关键词（名称/作者/简介，大小写不敏感） */
+  const q = state.q.trim().toLowerCase();
+  let list = catalog.filter(
+    (i) =>
+      (state.tag === "全部" || i.type === state.tag) &&
+      (!q || (i.name + " " + i.author + " " + i.desc).toLowerCase().includes(q)),
+  );
+
+  const groups = document.getElementById("groups");
+  let line = `共 ${list.length} 个结果` + (q ? `（关键词“${state.q.trim()}”）` : "");
+  if (state.tag !== "全部") line += ` · 标签「${state.tag}」`;
+
+  if (state.view === "new") {
+    /* 最新收录：独立标签页，30 天曝光窗，按收录日期倒序，不进主分（§5.5） */
+    const cutoff = Date.now() - 30 * 86400000;
+    list = list
+      .filter((i) => i.includedAt && new Date(i.includedAt).getTime() >= cutoff)
+      .sort((a, b) => b.includedAt.localeCompare(a.includedAt));
+    line = `最新收录 · 30 天曝光窗 · 共 ${list.length} 个（按收录时间倒序，不影响主排名）`;
+    groups.innerHTML =
+      tableHTML(list.map((i, idx) => row(i, idx))) || `<div class="empty">近 30 天没有新收录的插件</div>`;
+  } else if (state.groupBy === "time") {
+    /* 时间分组视图：按检查年月分组，新的在前，未审查最后 */
+    const byGroup = new Map();
+    for (const i of list) {
+      const k = timeKey(i);
+      if (!byGroup.has(k)) byGroup.set(k, []);
+      byGroup.get(k).push(i);
+    }
+    groups.innerHTML =
+      [...byGroup.keys()]
+        .sort(timeSort)
+        .map((t) => {
+          const rows = byGroup.get(t).slice().sort(rankSort);
+          const isCollapsed = state.collapsed.has(t);
+          return `
+          <div class="group-head ${isCollapsed ? "collapsed" : ""}" data-type="${t}">
+            <span class="arrow">▼</span>
+            <h3>${t}</h3>
+            <span class="count">${rows.length} 个</span>
+            <span class="rule"></span>
+          </div>
+          ${isCollapsed ? "" : tableHTML(rows.map((i, idx) => row(i, idx)))}`;
+        })
+        .join("") || `<div class="empty">没有匹配的插件，换个关键词或标签试试</div>`;
+  } else {
+    /* 默认排名视图：层 → Score → 资历 → 名称，平铺一列（§5.1/§5.2/§5.5） */
+    const ranked = list.slice().sort(rankSort);
+    groups.innerHTML =
+      tableHTML(ranked.map((i, idx) => row(i, i.tier === "unknown" ? null : idx + 1))) ||
+      `<div class="empty">没有匹配的插件，换个关键词或标签试试</div>`;
+  }
+
+  document.getElementById("resultLine").textContent = line;
+
+  /* 分组折叠（仅时间分组视图有组头） */
+  groups.querySelectorAll(".group-head").forEach((el) => {
+    el.addEventListener("click", () => {
+      const t = el.dataset.type;
+      state.collapsed.has(t) ? state.collapsed.delete(t) : state.collapsed.add(t);
+      render();
+    });
+  });
+}
+
+/* 标签 chips（仅筛选） */
+function renderChips() {
+  const chips = document.getElementById("chips");
+  chips.innerHTML = ["全部", ...TYPES]
+    .map((t) => {
+      const n = t === "全部" ? catalog.length : catalog.filter((i) => i.type === t).length;
+      return `<span class="chip ${state.tag === t ? "on" : ""}" data-type="${t}">${t}<span class="n">${n}</span></span>`;
+    })
+    .join("");
+  chips.querySelectorAll(".chip").forEach((el) => {
+    el.addEventListener("click", () => { state.tag = el.dataset.type; renderChips(); render(); });
+  });
+}
+
+/* 搜索框 */
+const qInput = document.getElementById("q");
+const clearBtn = document.getElementById("clearBtn");
+qInput.addEventListener("input", () => {
+  state.q = qInput.value;
+  clearBtn.style.display = qInput.value ? "block" : "none";
+  render();
+});
+clearBtn.addEventListener("click", () => {
+  qInput.value = ""; state.q = ""; clearBtn.style.display = "none"; render(); qInput.focus();
+});
+
+/* 视图切换：全部插件 / 最新收录（最新收录仅主列表视图有，与搜索/标签叠加） */
+const viewChips = document.getElementById("viewChips");
+function syncViewChips() {
+  viewChips.querySelectorAll(".chip").forEach((el) =>
+    el.classList.toggle("on", el.dataset.view === state.view),
+  );
+}
+viewChips.querySelectorAll(".chip").forEach((el) => {
+  el.addEventListener("click", () => {
+    if (state.view === el.dataset.view) return;
+    state.view = el.dataset.view;
+    state.collapsed.clear();
+    syncViewChips();
+    render();
+  });
+});
+
+/* 展示维度切换（按排名 / 按时间分组），切换时清掉折叠状态；最新收录视图下不生效 */
+const dimChips = document.getElementById("dimChips");
+function syncDimChips() {
+  dimChips.style.opacity = state.view === "new" ? ".4" : "1";
+  dimChips.style.pointerEvents = state.view === "new" ? "none" : "auto";
+  dimChips.querySelectorAll(".chip").forEach((el) =>
+    el.classList.toggle("on", el.dataset.dim === state.groupBy),
+  );
+}
+dimChips.querySelectorAll(".chip").forEach((el) => {
+  el.addEventListener("click", () => {
+    if (state.groupBy === el.dataset.dim) return;
+    state.groupBy = el.dataset.dim;
+    state.collapsed.clear();
+    syncDimChips();
+    render();
+  });
+});
+
+renderChips();
+syncViewChips();
+syncDimChips();
+render();
+</script>
+</body>
+</html>
