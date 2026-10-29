@@ -410,3 +410,36 @@ table.tbl tbody tr:hover { background: #fafbfc; }
 .md pre code { background: none; padding: 0; }
 .md blockquote p { margin: 0; }
 .md hr { clear: both; }
+
+/* ---------- 插件管理：收录列表（排名/搜索/标签/最新收录） ---------- */
+.toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.search-wrap { position: relative; flex: 1 1 220px; max-width: 380px; }
+.search-wrap input {
+  width: 100%; padding: 6px 30px 6px 30px; border: 1px solid var(--line, #333);
+  border-radius: var(--radius, 6px); font-size: 13px; background: var(--panel, transparent);
+  color: var(--text, inherit); outline: none;
+}
+.search-wrap input:focus { border-color: var(--accent, #4a9eff); }
+.search-wrap .icon { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); font-size: 12px; opacity: .7; }
+.search-wrap .clear {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  border: none; background: none; color: var(--muted, #999); cursor: pointer;
+  font-size: 13px; padding: 2px 5px; display: none;
+}
+.search-wrap .clear:hover { color: var(--text, inherit); }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip {
+  border: 1px solid var(--line, #444); background: transparent; color: var(--muted, #999);
+  border-radius: 14px; padding: 3px 11px; font-size: 12.5px; cursor: pointer; user-select: none; white-space: nowrap;
+}
+.chip:hover { border-color: var(--accent, #4a9eff); color: var(--accent, #4a9eff); }
+.chip.on { background: var(--accent, #4a9eff); border-color: var(--accent, #4a9eff); color: #fff; }
+.chip .n { opacity: .75; margin-left: 3px; }
+.result-line { font-size: 12.5px; color: var(--muted, #999); margin: 0 0 10px; }
+.group-head { display: flex; align-items: center; gap: 8px; margin: 14px 0 8px; cursor: pointer; }
+.group-head:first-of-type { margin-top: 4px; }
+.group-head h3 { font-size: 13.5px; margin: 0; }
+.group-head .count { font-size: 12px; color: var(--muted, #999); }
+.group-head .arrow { color: var(--muted, #999); font-size: 11px; transition: transform .15s; }
+.group-head.collapsed .arrow { transform: rotate(-90deg); }
+.group-head .rule { flex: 1; height: 1px; background: var(--line, #444); opacity: .5; }
