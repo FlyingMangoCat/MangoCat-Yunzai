@@ -10,6 +10,7 @@ panel:
     url: "https://gitee.com/huifeidemangguomao/yunzai-one-button/raw/master/include.md"
     localPath: ""           # 填写本地 include.md 绝对路径时优先读取本地，留空只读远端
     cacheMinutes: 30        # 台账缓存时长（分钟），过期后重新拉取
+    layers: {}              # 可选：按「目录名/插件名」指定合规层 L1/L2/L3；台账「层」列优先，其次此表
 
   # 插件安装
   install:

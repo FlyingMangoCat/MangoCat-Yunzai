@@ -143,6 +143,8 @@ CI 只认退出码，所以要么用 `--fail-on`，要么用 `--ratchet`。
 
 把 `HEAD + 日期 + 结论 + 理由` 写进收录台账（`参考内容/include-新结构草案.md` 或面板收录列表），确保下次可复核。
 
+> 合规层（L1/L2/L3）来源优先级：已安装插件的 `plugin.yaml`（`isolation`→L3，`permissions`→L2）> 台账「层」列 > `panel.ledger.layers`（按目录名/插件名）> 默认（官方/已收录 L1，未审核/失效 L0）。
+
 ---
 
 ## 8. 增量与棘轮
