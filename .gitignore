@@ -1,6 +1,9 @@
 # Logs
 logs
 *.log
+
+# 审计脚本报告输出（plugin-audit.mjs 默认写入 audit-reports/）
+audit-reports/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
