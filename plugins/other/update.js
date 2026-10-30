@@ -260,8 +260,16 @@ export class update extends plugin {
     if (ret.error) {
       // pull 失败也要把暂存的改动放回,不弄丢用户数据
       if (stashed) await this.postRestore(plugin);
-      logger.mark(`${this.e.logFnc} 更新失败：${this.typeName}`);
-      this.gitErr(ret.error, ret.stdout);
+      // 失败上下文全量落日志：远端、命令、stderr/stdout，否则事后无从排查
+      logger.error(
+        `[更新失败] ${this.typeName}\n` +
+        `远端: ${(await this.getRemoteUrl(plugin)) || "未知"}\n` +
+        `命令: ${cm}\n` +
+        `错误: ${lodash.trim(ret.error?.message || ret.error)}\n` +
+        `stderr: ${lodash.trim(String(ret.stderr || "")).slice(0, 2000) || "(空)"}\n` +
+        `stdout: ${lodash.trim(String(ret.stdout || "")).slice(0, 1000) || "(空)"}`,
+      );
+      this.gitErr(ret.error, ret.stdout, plugin);
       // 分叉导致 fast-forward 失败时自查:自动列出本地领先远端的提交,分叉原因直接随回复返回
       if (/fast-forward|Diverging|Not possible/i.test(String(ret.error))) {
         const divergeBranch = (await this.getBranch(plugin)) || "";
@@ -377,7 +385,14 @@ export class update extends plugin {
     return time;
   }
 
-  async gitErr(err, stdout) {
+  /** 当前远端 URL（日志与诊断用）；取不到返回空串 */
+  async getRemoteUrl(plugin = "") {
+    const dir = plugin ? `./plugins/${plugin}` : ".";
+    const ret = await this.execSync(`git -C "${dir}" remote get-url origin`);
+    return ret.error ? "" : lodash.trim(ret.stdout);
+  }
+
+  async gitErr(err, stdout, plugin = "") {
     let msg = "更新失败！";
     let errMsg = err.toString();
     stdout = stdout.toString();
