@@ -4,6 +4,7 @@ import lodash from "lodash";
 import fs from "node:fs";
 import { Restart } from "./restart.js";
 import common from "../../lib/common/common.js";
+import { ensureRemoteUsable, candidatesFromLedger } from "../../lib/tools/gitSource.js";
 
 const require = createRequire(import.meta.url);
 const { exec, execSync } = require("child_process");
@@ -11,8 +12,8 @@ const { exec, execSync } = require("child_process");
 let uping = false;
 
 /**
- * 更新源表：本体与 liulian-plugin 各有 Gitee/GitCode 两个公开镜像
- * pull 报凭据类错误（远端异常要求登录/风控）时按序换源重试，全部失败才报错
+ * 内置更新源表：本体与 liulian-plugin 各有 Gitee/GitCode 两个公开镜像，
+ * 作为台账缓存缺失时的兜底候选；主候选来自台账收录地址（见 ledgerCandidates）
  */
 const UPDATE_SOURCES = {
   "MangoCat-Yunzai": [
@@ -204,6 +205,17 @@ export class update extends plugin {
   async runUpdate(plugin = "") {
     this.isNowUp = false;
 
+    // pull 前探活：远端失效时按台账收录地址换源，全部不可用则直接给出可读错误
+    // （远端 404/转私有/风控时 gitee 要求输用户名，GIT_TERMINAL_PROMPT=0 下表现为
+    // could not read Username，用户看不出真实原因，必须在拉取前拦下）
+    try {
+      await this.ensureSource(plugin);
+    } catch (err) {
+      logger.mark(`${this.e.logFnc} 更新中止：${err.message}`);
+      await this.reply(`【${plugin || this.typeName}】${err.message}`);
+      return false;
+    }
+
     let cm = "git pull --ff-only";
 
     let type = "更新";
@@ -293,33 +305,45 @@ export class update extends plugin {
   }
 
   /**
-   * 凭据类报错时按源表依次换源重试：
-   * 逐个 set-url 后用 ls-remote 探测可用性，可用即返回（保留新源）；
-   * 全部不可用则恢复原 remote，交回外层走原报错流程。
-   * @param {string} plugin 插件名（空=本体主仓库），不在源表中的仓库不换源
+   * 候选源：台账收录地址（data/panel/ledger.json 缓存，面板维护）优先，内置源表兜底。
+   * 本体在台账里也有收录条目，plugin 为空时按目录名 MangoCat-Yunzai 匹配。
+   */
+  ledgerCandidates(plugin = "") {
+    const key = plugin || "MangoCat-Yunzai";
+    let fromLedger = [];
+    try {
+      const cache = JSON.parse(fs.readFileSync("data/panel/ledger.json", "utf8"));
+      fromLedger = candidatesFromLedger(cache.items || [], key);
+    } catch {}
+    return [...fromLedger, ...(UPDATE_SOURCES[key] || [])];
+  }
+
+  /**
+   * 探活并按候选源换源；全部不可用抛可读错误（runUpdate 拦下直接回复用户）。
+   * @returns {Promise<boolean>} 是否切换到了新源
+   */
+  async ensureSource(plugin = "") {
+    const { switched } = await ensureRemoteUsable({
+      dir: plugin ? `./plugins/${plugin}` : ".",
+      candidates: this.ledgerCandidates(plugin),
+      log: (m) => logger.mark(`[更新] ${plugin || "本体"} ${m}`),
+    });
+    return switched;
+  }
+
+  /**
+   * 凭据类报错时换源重试的兜底入口（探活+换源已前移到 runUpdate 开头，
+   * 这里覆盖"探活时远端还活着、拉取时才失效"的窗口期）。
+   * @param {string} plugin 插件名（空=本体主仓库）
    * @returns {Promise<boolean>} 是否成功切换到可用源
    */
   async switchSource(plugin = "") {
-    const key = plugin || "MangoCat-Yunzai";
-    const sources = UPDATE_SOURCES[key];
-    if (!sources) return false;
-    const dir = plugin ? `./plugins/${plugin}` : ".";
-    const curRet = await this.execSync(`git -C "${dir}" remote get-url origin`);
-    const cur = curRet.error ? "" : lodash.trim(curRet.stdout);
-    if (!cur) return false;
-    for (const url of sources) {
-      if (url === cur) continue;
-      await this.execSync(`git -C "${dir}" remote set-url origin "${url}"`);
-      const probe = await this.execSync(`git -C "${dir}" ls-remote origin HEAD`);
-      if (!probe.error) {
-        logger.mark(`[更新] ${key} 已换源：${url}`);
-        return true;
-      }
-      logger.mark(`[更新] ${key} 源不可用：${url}`);
+    try {
+      return await this.ensureSource(plugin);
+    } catch {
+      // 所有候选源都不通，ensureRemoteUsable 内已恢复原 remote，交回外层按原样报错
+      return false;
     }
-    // 所有候选源都不通，恢复原 remote，外层按原样报错
-    await this.execSync(`git -C "${dir}" remote set-url origin "${cur}"`);
-    return false;
   }
 
   async getcommitId(plugin = "") {
