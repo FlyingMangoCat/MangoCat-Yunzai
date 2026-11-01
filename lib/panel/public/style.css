@@ -447,3 +447,7 @@ table.tbl tbody tr:hover { background: #fafbfc; }
 .group-head .arrow { color: var(--muted, #999); font-size: 0.6875rem; transition: transform .15s; }
 .group-head.collapsed .arrow { transform: rotate(-90deg); }
 .group-head .rule { flex: 1; height: 1px; background: var(--line, #444); opacity: .5; }
+
+/* 手机端宽表：整表横向滑动，不挤压列 */
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.table-wrap > .tbl { min-width: 40rem; }
