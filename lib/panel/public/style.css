@@ -71,7 +71,7 @@ button { font: inherit; color: inherit; }
 /* ---------- 框架 ---------- */
 
 .app { display: flex; flex-direction: column; min-height: 100vh; }
-.app.hidden, .auth-wrap.hidden { display: none; }
+.hidden { display: none; }
 
 .header {
   position: sticky;
