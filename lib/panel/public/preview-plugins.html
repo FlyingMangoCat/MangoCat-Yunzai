@@ -81,6 +81,17 @@ table.tbl td { padding: 8px 10px; border-bottom: 1px solid var(--line-soft); ver
 table.tbl tr:last-child td { border-bottom: none; }
 table.tbl tr:hover td { background: #fafbfc; }
 .empty { text-align: center; color: var(--muted-2); padding: 24px 0; }
+
+/* ===== 插件评分星星（组件取自 Uiverse.io by andrew-demchenk0，按只读展示适配：禁交互、缩放、float 改 flex 行） ===== */
+.badge.red { color: #d1242f; border-color: transparent; background: #ffebe9; }
+.score { display: flex; align-items: center; gap: 0.5rem; white-space: nowrap; }
+.score .rating { display: inline-flex; flex-direction: row-reverse; line-height: 1; }
+.score .rating input { display: none; }
+.score .rating label { font-size: 16px; color: #d5dbe3; cursor: default; }
+.score .rating label::before { content: "★"; }
+.score .rating input:checked ~ label { color: #ffa723; }
+.score .num { font-weight: 600; }
+.score .num.neg { color: #d1242f; }
 </style>
 </head>
 <body>
@@ -157,6 +168,25 @@ function scoreOf(i) {
 }
 const sOf = (i) => i._s || (i._s = scoreOf(i));
 
+/* ===== 评分展示：内部 0~1 分换算百分制（×100 保留一位小数），星星按分段梯队
+ * ≥0.9→5★ / ≥0.75→4★ / ≥0.6→3★ / ≥0.4→2★ / >0→1★；负分与无分不显示星星。
+ * 排序仍使用内部原值，此处只负责渲染。与 app.js 的 scoreCell 实现保持一致 ===== */
+let scoreCellSeq = 0;
+const starTier = (score) =>
+  score == null || score <= 0 ? 0 : score >= 0.9 ? 5 : score >= 0.75 ? 4 : score >= 0.6 ? 3 : score >= 0.4 ? 2 : 1;
+function scoreCell(score) {
+  if (score == null) return `<span class="muted">—</span>`;
+  const num = `<span class="num${score < 0 ? " neg" : ""}">${(score * 100).toFixed(1)}</span>`;
+  const tier = starTier(score);
+  if (!tier) return `<span class="badge red">需谨慎</span>${num}`;
+  const key = `sc${++scoreCellSeq}`;
+  const stars = Array.from({ length: 5 }, (_, idx) => {
+    const v = 5 - idx;
+    return `<input value="${v}" name="${key}" id="${key}-${v}" type="radio"${v === tier ? " checked" : ""}><label for="${key}-${v}"></label>`;
+  }).join("");
+  return `<span class="rating">${stars}</span>${num}`;
+}
+
 /* 主排序键：层 → Score → 资历 → 名称；未收录不参与排名（固定最后）；维护者自产并列排最后 */
 function rankSort(a, b) {
   const la = a.tier === "unknown" ? 0 : LAYER[a.layer] || 0;
@@ -194,7 +224,7 @@ function row(i, rank) {
   return `<tr>
     <td class="mono small muted">${rank == null ? "—" : "#" + rank}</td>
     <td>${tierBadge(i.tier)} <span class="badge">${i.layer}</span>${i.maintainer ? ` <span class="badge amber">自产</span>` : ""}<br><span class="mono">${i.name}</span> <span class="badge">${i.type}</span><br><span class="small muted">${i.desc}</span></td>
-    <td class="mono small" title="${breakdown}">${s.score.toFixed(3)}</td>
+    <td class="small" title="${breakdown}">${scoreCell(s.score)}</td>
     <td class="small muted">${i.author}</td>
     <td class="mono small">${i.checkDate || "免审"}</td>
     <td class="mono small">${i.hash || "—"}</td>
