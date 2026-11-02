@@ -87,9 +87,9 @@ table.tbl tr:hover td { background: #fafbfc; }
 .score { display: flex; align-items: center; gap: 0.5rem; white-space: nowrap; }
 .score .rating { display: inline-flex; flex-direction: row-reverse; line-height: 1; }
 .score .rating input { display: none; }
-/* 星星用 clip-path 矢量绘制：★ 文本字形在不同浏览器回退到不同字体，字形大小不一致 */
-.score .rating label { width: 16px; height: 16px; background: #d5dbe3; clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
-.score .rating input:checked ~ label { background: #ffa723; }
+.score .rating label { font-size: 16px; color: #d5dbe3; cursor: default; }
+.score .rating label::before { content: "★"; }
+.score .rating input:checked ~ label { color: #ffa723; }
 .score .num { font-weight: 600; }
 .score .num.neg { color: #d1242f; }
 </style>
