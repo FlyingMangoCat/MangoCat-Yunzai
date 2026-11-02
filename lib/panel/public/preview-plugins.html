@@ -181,7 +181,7 @@ function scoreCell(score) {
   const key = `sc${++scoreCellSeq}`;
   const stars = Array.from({ length: 5 }, (_, idx) => {
     const v = 5 - idx;
-    return `<input value="${v}" name="${key}" id="${key}-${v}" type="radio"${v === tier ? " checked" : ""}><label for="${key}-${v}"></label>`;
+    return `<input value="${v}" name="${key}" id="${key}-${v}" type="radio" disabled${v === tier ? " checked" : ""}><label for="${key}-${v}"></label>`;
   }).join("");
   // 外层 .score 是样式作用域（.score .rating / .score .num），缺失会导致整套 CSS 落空
   if (!tier) return `<span class="score"><span class="badge red">需谨慎</span>${num}</span>`;
