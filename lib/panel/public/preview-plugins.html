@@ -178,13 +178,14 @@ function scoreCell(score) {
   if (score == null) return `<span class="muted">—</span>`;
   const num = `<span class="num${score < 0 ? " neg" : ""}">${(score * 100).toFixed(1)}</span>`;
   const tier = starTier(score);
-  if (!tier) return `<span class="badge red">需谨慎</span>${num}`;
   const key = `sc${++scoreCellSeq}`;
   const stars = Array.from({ length: 5 }, (_, idx) => {
     const v = 5 - idx;
     return `<input value="${v}" name="${key}" id="${key}-${v}" type="radio"${v === tier ? " checked" : ""}><label for="${key}-${v}"></label>`;
   }).join("");
-  return `<span class="rating">${stars}</span>${num}`;
+  // 外层 .score 是样式作用域（.score .rating / .score .num），缺失会导致整套 CSS 落空
+  if (!tier) return `<span class="score"><span class="badge red">需谨慎</span>${num}</span>`;
+  return `<span class="score"><span class="rating">${stars}</span>${num}</span>`;
 }
 
 /* 主排序键：层 → Score → 资历 → 名称；未收录不参与排名（固定最后）；维护者自产并列排最后 */
