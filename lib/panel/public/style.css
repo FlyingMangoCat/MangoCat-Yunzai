@@ -195,6 +195,16 @@ button { font: inherit; color: inherit; }
 .badge.amber { background: var(--amber-soft); color: var(--amber); border-color: #ecd9a8; }
 .badge.red { background: var(--red-soft); color: var(--red); border-color: #f0c9c6; }
 .badge.blue { background: var(--accent-soft); color: var(--accent); border-color: #c8d9fb; }
+
+/* 插件评分星星（组件取自 Uiverse.io by andrew-demchenk0，按只读展示适配：禁交互、缩放、float 改 flex 行） */
+.score { display: flex; align-items: center; gap: 0.5rem; white-space: nowrap; }
+.score .rating { display: inline-flex; flex-direction: row-reverse; line-height: 1; }
+.score .rating input { display: none; }
+.score .rating label { font-size: 1rem; color: #d5dbe3; cursor: default; }
+.score .rating label::before { content: "★"; }
+.score .rating input:checked ~ label { color: #ffa723; }
+.score .num { font-weight: 600; }
+.score .num.neg { color: var(--red); }
 .badge-unaudited { cursor: pointer; color: var(--amber); border-color: #ecd9a8; }
 .badge-unaudited:hover { background: var(--amber-soft); }
 
