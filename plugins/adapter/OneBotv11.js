@@ -1060,7 +1060,7 @@ let OneBotv11Adapter = new (class OneBotv11Adapter {
       }
       data.bot = Bot[data.self_id]
 
-      if (!Bot.uin.includes(data.self_id)) Bot.uin.push(data.self_id)
+      if (!Bot.uins.includes(data.self_id)) Bot.uins.push(data.self_id)
 
       data.bot
         .sendApi("_set_model_show", {
@@ -1546,7 +1546,7 @@ let OneBotv11Adapter = new (class OneBotv11Adapter {
       }
 
       if (data.post_type) {
-        if (data.meta_event_type !== "lifecycle" && !Bot.uin.includes(data.self_id)) {
+        if (data.meta_event_type !== "lifecycle" && !Bot.uins.includes(data.self_id)) {
           Bot.makeLog("warn", `找不到对应Bot，忽略消息：${logger.magenta(data.raw)}`, data.self_id)
           return false
         }

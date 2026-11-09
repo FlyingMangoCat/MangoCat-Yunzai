@@ -10,7 +10,7 @@ export class quit extends plugin {
   }
 
   async accept() {
-    if (!Bot.uin.some((u) => String(u) === String(this.e.user_id))) return;
+    if (!Bot.uins.some((u) => String(u) === String(this.e.user_id))) return;
 
     let other = cfg.other;
     if (other.autoQuit <= 0) return;
