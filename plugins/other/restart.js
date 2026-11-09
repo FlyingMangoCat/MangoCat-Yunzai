@@ -39,10 +39,12 @@ export class Restart extends plugin {
 
       let msg = `重启成功：耗时${time.toFixed(2)}秒`;
 
+      // 优先用重启前收命令的账号回执；旧格式数据无 selfId，回退全局路由
+      const bot = (restart.selfId && Bot[restart.selfId]) || Bot;
       if (restart.isGroup) {
-        Bot.pickGroup(restart.id).sendMsg(msg);
+        bot.pickGroup(restart.id).sendMsg(msg);
       } else {
-        Bot.pickUser(restart.id).sendMsg(msg);
+        bot.pickUser(restart.id).sendMsg(msg);
       }
       redis.del(this.key);
     }
@@ -55,6 +57,7 @@ export class Restart extends plugin {
     let data = JSON.stringify({
       isGroup: !!this.e.isGroup,
       id: this.e.isGroup ? this.e.group_id : this.e.user_id,
+      selfId: String(this.e.self_id),
       time: new Date().getTime(),
     });
 
