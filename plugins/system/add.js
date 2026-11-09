@@ -101,8 +101,8 @@ export class add extends plugin {
   async getGroupId() {
     /** 添加全局表情，存入到机器人qq文件中 */
     if (this.isGlobal) {
-      this.group_id = Bot.uin;
-      return Bot.uin;
+      this.group_id = this.e.self_id;
+      return this.e.self_id;
     }
 
     if (this.e.isGroup) {
@@ -130,10 +130,10 @@ export class add extends plugin {
       return false;
     }
     if (groupCfg.imgAddLimit == 1) {
-      if (!Bot.gml.has(this.group_id)) {
+      if (!this.e.bot.gml.has(this.group_id)) {
         return false;
       }
-      if (!Bot.gml.get(this.group_id).get(this.e.user_id)) {
+      if (!this.e.bot.gml.get(this.group_id).get(this.e.user_id)) {
         return false;
       }
       if (!this.e.member.is_admin) {
@@ -207,7 +207,7 @@ export class add extends plugin {
       /** 过滤#添加 */
       .replace(/#|＃|图片|表情|添加|删除|全局/g, "")
       /** 过滤@ */
-      .replace(new RegExp("{at:" + Bot.uin + "}", "g"), "")
+      .replace(new RegExp("{at:" + this.e.self_id + "}", "g"), "")
       .trim();
 
     this.keyWord = this.trimAlias(this.keyWord);
@@ -337,12 +337,12 @@ export class add extends plugin {
 
   saveGlobalJson() {
     let obj = {};
-    for (let [k, v] of textArr[Bot.uin]) {
+    for (let [k, v] of textArr[this.e.self_id]) {
       obj[k] = v;
     }
 
     fs.writeFileSync(
-      `${this.path}${Bot.uin}.json`,
+      `${this.path}${this.e.self_id}.json`,
       JSON.stringify(obj, "", "\t"),
     );
   }
@@ -401,7 +401,7 @@ export class add extends plugin {
     let keyWord = this.e
       .toString()
       .replace(/#|＃/g, "")
-      .replace(`{at:${Bot.uin}}`, "")
+      .replace(`{at:${this.e.self_id}}`, "")
       .trim();
 
     keyWord = this.trimAlias(keyWord);
@@ -413,7 +413,7 @@ export class add extends plugin {
       if (
         !isNaN(num) &&
         !textArr[this.group_id].has(keyWord) &&
-        !textArr[Bot.uin].has(keyWord)
+        !textArr[this.e.self_id].has(keyWord)
       ) {
         keyWord = lodash.trimEnd(keyWord, num).trim();
         num--;
@@ -421,7 +421,7 @@ export class add extends plugin {
     }
 
     let msg = textArr[this.group_id].get(keyWord) || [];
-    let globalMsg = textArr[Bot.uin].get(keyWord) || [];
+    let globalMsg = textArr[this.e.self_id].get(keyWord) || [];
     if (lodash.isEmpty(msg) && lodash.isEmpty(globalMsg)) return false;
 
     msg = [...msg, ...globalMsg];
@@ -536,11 +536,11 @@ export class add extends plugin {
 
   /** 初始化全局已添加内容 */
   initGlobalTextArr() {
-    if (textArr[Bot.uin]) return;
+    if (textArr[this.e.self_id]) return;
 
-    textArr[Bot.uin] = new Map();
+    textArr[this.e.self_id] = new Map();
 
-    let globalPath = `${this.path}${Bot.uin}.json`;
+    let globalPath = `${this.path}${this.e.self_id}.json`;
     if (!fs.existsSync(globalPath)) {
       return;
     }
@@ -552,20 +552,20 @@ export class add extends plugin {
         if (text[i][0] && !Array.isArray(text[i][0])) {
           text[i] = [text[i]];
         }
-        textArr[Bot.uin].set(String(i), text[i]);
+        textArr[this.e.self_id].set(String(i), text[i]);
       }
     } catch (error) {
       logger.error(`json格式错误：${globalPath}`);
-      delete textArr[Bot.uin];
+      delete textArr[this.e.self_id];
       return false;
     }
 
     /** 加载表情 */
-    let globalFacePath = `${this.facePath}${Bot.uin}`;
+    let globalFacePath = `${this.facePath}${this.e.self_id}`;
 
     if (fs.existsSync(globalFacePath)) {
       const files = fs
-        .readdirSync(`${this.facePath}${Bot.uin}`)
+        .readdirSync(`${this.facePath}${this.e.self_id}`)
         .filter((file) => /\.(jpeg|jpg|png|gif)$/g.test(file));
 
       for (let val of files) {
@@ -573,9 +573,9 @@ export class add extends plugin {
         tmp[0] = tmp[0].replace(/_[0-9]{10}$/, "");
         if (/at|image/g.test(val)) continue;
 
-        if (textArr[Bot.uin].has(tmp[0])) continue;
+        if (textArr[this.e.self_id].has(tmp[0])) continue;
 
-        textArr[Bot.uin].set(tmp[0], [
+        textArr[this.e.self_id].set(tmp[0], [
           [
             {
               local: `${globalFacePath}/${val}`,
@@ -762,7 +762,7 @@ export class add extends plugin {
       title = `表情${search}，${count}条`;
     }
 
-    let forwardMsg = await this.makeForwardMsg(Bot.uin, title, msg, end);
+    let forwardMsg = await this.makeForwardMsg(this.e.self_id, title, msg, end);
 
     this.e.reply(forwardMsg);
   }
@@ -770,11 +770,11 @@ export class add extends plugin {
   async makeForwardMsg(qq, title, msg, end = "") {
     let nickname = Bot.nickname;
     if (this.e.isGroup) {
-      let info = await Bot.getGroupMemberInfo(this.e.group_id, qq);
+      let info = await this.e.bot.getGroupMemberInfo(this.e.group_id, qq);
       nickname = info.card ?? info.nickname;
     }
     let userInfo = {
-      user_id: Bot.uin,
+      user_id: this.e.self_id,
       nickname,
     };
 
@@ -835,7 +835,7 @@ export class add extends plugin {
 
       for (let qq of tmp) {
         qq = qq.match(/[1-9][0-9]{4,14}/g)[0];
-        let member = await await Bot.getGroupMemberInfo(
+        let member = await this.e.bot.getGroupMemberInfo(
           this.group_id,
           Number(qq),
         ).catch(() => {});
