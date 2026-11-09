@@ -158,7 +158,7 @@ export class add extends plugin {
 
     if (this.e.at) {
       let at = lodash.filter(this.e.message, (o) => {
-        return o.type == "at" && o.qq != Bot.uin;
+        return o.type == "at" && !Bot.uin.some((u) => String(u) === String(o.qq));
       });
       if (at.length > 1) {
         this.e.reply("添加错误：只能@一个人当关键词");
@@ -250,7 +250,7 @@ export class add extends plugin {
 
     for (let i in message) {
       if (message[i].type == "at") {
-        if (message[i].qq == Bot.uin) {
+        if (Bot.uin.some((u) => String(u) === String(message[i].qq))) {
           this.e.reply("添加内容不能@机器人！");
           return;
         }
@@ -308,7 +308,7 @@ export class add extends plugin {
           continue;
         }
         if (msg[i].type == "at") {
-          if (msg[i].qq == Bot.uin) {
+          if (Bot.uin.some((u) => String(u) === String(msg[i].qq))) {
             delete msg[i];
             continue;
           } else {
