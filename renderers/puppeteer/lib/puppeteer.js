@@ -25,7 +25,7 @@ export default class Puppeteer extends Renderer {
     this.renderNum = 0
     this.config = {
       userDataDir: config.userDataDir || "data/puppeteer",
-      headless: config.headless || "new",
+      headless: config.headless ?? "new",
       args: config.args || [
         "--disable-gpu",
         "--disable-setuid-sandbox",
