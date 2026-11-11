@@ -67,7 +67,7 @@ Bot.adapter.push(
     }
 
     async sendFile(file, name = path.basename(file)) {
-      return this.sendMsg(segment.file(file, name))
+      return this.sendMsg({ type: "file", file, name })
     }
 
     pickFriend() {

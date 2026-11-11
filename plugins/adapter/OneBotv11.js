@@ -2,11 +2,6 @@ import cfg from "../../lib/config/config.js"
 import path from "node:path"
 import { ulid } from "ulid"
 
-/* ------ icqq 兼容层：静态方法 ------ */
-Bot.getGroupMemberInfo = (group_id, user_id) =>
-  Bot[Bot.uin]?.pickMember(group_id, user_id)?.getInfo(true, true)
-/* ------ 兼容层结束 ------ */
-
 let OneBotv11Adapter = new (class OneBotv11Adapter {
     id = "QQ"
     name = "OneBotv11"
@@ -73,7 +68,8 @@ let OneBotv11Adapter = new (class OneBotv11Adapter {
 
         switch (i.type) {
           case "at":
-            i.data.qq = String(i.data.qq)
+            if (i.data.id != null) i.data.id = String(i.data.id)
+            i.data.qq = String(i.data.id ?? i.data.qq)
             break
           case "reply":
             i.data.id = String(i.data.id)
@@ -1032,6 +1028,9 @@ let OneBotv11Adapter = new (class OneBotv11Adapter {
         fl: new Map(),
 
         pickMember: this.pickMember.bind(this, data),
+        getGroupMemberInfo(group_id, user_id) {
+          return this.pickMember(group_id, user_id)?.getInfo(true, true)
+        },
         pickGroup: this.pickGroup.bind(this, data),
         getGroupArray: this.getGroupArray.bind(this, data),
         getGroupList: this.getGroupList.bind(this, data),
