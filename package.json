@@ -64,7 +64,8 @@
       "nodejieba",
       "puppeteer",
       "sharp",
-      "sqlite3"
+      "sqlite3",
+      "ssh2"
     ]
   }
 }
