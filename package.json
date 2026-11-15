@@ -61,6 +61,7 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "canvas",
+      "nodejieba",
       "puppeteer",
       "sharp",
       "sqlite3"
