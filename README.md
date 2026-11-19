@@ -32,6 +32,12 @@ git clone https://gitee.com/huifeidemangguomao/MangoCat-Yunzai.git
 cd MangoCat-Yunzai
 git clone https://gitee.com/huifeidemangguomao/liulian-plugin.git ./plugins/liulian-plugin/
 ```
+* 使用Gitcode
+```
+git clone https://gitcode.com/huifeidemangguomao/MangoCat-Yunzai.git
+cd MangoCat-Yunzai
+git clone https://gitcode.com/huifeidemangguomao/liulian-plugin.git ./plugins/liulian-plugin/
+```
 
 2.启用 pnpm（Node 自带 Corepack，已安装的可以跳过）
 
