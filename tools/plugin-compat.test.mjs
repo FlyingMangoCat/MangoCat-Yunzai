@@ -330,3 +330,56 @@ test("game normalization does not weaken the configuration-backed master lock", 
   assert.equal(e.isMaster, false)
   assert.equal(Object.getOwnPropertyDescriptor(e, "isMaster").configurable, false)
 })
+
+test("group dedupe ignores the receiving account and normalized media aliases", () => {
+  const { loader } = fixture()
+  const first = {
+    post_type: "message", group_id: 10, user_id: 20, time: 123, self_id: "bot-a",
+    message: [
+      { type: "text", text: "same" },
+      { type: "image", file: "0123456789abcdef0123456789abcdef" },
+    ],
+  }
+  const duplicate = { ...first, self_id: "bot-b" }
+  assert.equal(loader.checkDup(first), true)
+  assert.equal(loader.checkDup(duplicate), false)
+})
+
+test("fallback dedupe accepts the 10 second boundary and rejects only younger deliveries", () => {
+  const { loader } = fixture()
+  const event = () => ({
+    post_type: "message", group_id: 10, user_id: 20, time: 1, self_id: "bot-a",
+    message: [{ type: "text", text: "same" }],
+  })
+  assert.equal(loader.checkDup(event()), true)
+  const content = loader.msgKey(event().message)
+  const weakKey = `W:10:20:${content}`
+  loader.msgThrottle[weakKey] = Date.now() - 9999
+  assert.equal(loader.checkDup({ ...event(), time: 2, self_id: "bot-b" }), false)
+  loader.msgThrottle[weakKey] = Date.now() - 10001
+  assert.equal(loader.checkDup({ ...event(), time: 3, self_id: "bot-c" }), true)
+})
+
+test("private and timeless events bypass dedupe", () => {
+  const { loader } = fixture()
+  const base = { post_type: "message", group_id: 10, user_id: 20, message: [{ type: "text", text: "same" }] }
+  assert.equal(loader.checkDup(base), true)
+  assert.equal(loader.checkDup(base), true)
+  assert.equal(loader.checkDup({ ...base, time: 1, isPrivate: true }), true)
+  assert.equal(loader.checkDup({ ...base, time: 1, isPrivate: true }), true)
+})
+
+test("dedupe cleanup removes expired identities without losing the current message", () => {
+  const { loader } = fixture()
+  const now = Date.now()
+  loader.msgThrottle = { stale: now - 10001 }
+  loader.msgThrottleCleaned = now - 60001
+  const e = {
+    post_type: "message", group_id: 10, user_id: 20, time: now,
+    message: [{ type: "text", text: "current" }],
+  }
+  assert.equal(loader.checkDup(e), true)
+  assert.equal(loader.msgThrottle.stale, undefined)
+  assert.ok(Object.keys(loader.msgThrottle).some(key => key.startsWith("M:10:20:")))
+  assert.ok(Object.keys(loader.msgThrottle).some(key => key.startsWith("W:10:20:")))
+})
