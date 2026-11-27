@@ -94,13 +94,14 @@ const QQBotOfficialAdapter = new (class QQBotOfficialAdapter {
    */
   async request(appid, secret, method, api, body, retried = false) {
     const token = await this.accessToken(appid, secret)
+    const isForm = body instanceof FormData
     const res = await fetch(`${API_HOST}${api}`, {
       method,
       headers: {
-        "Content-Type": "application/json",
+        ...(isForm ? {} : { "Content-Type": "application/json" }),
         Authorization: `QQBot ${token}`,
       },
-      body: body ? JSON.stringify(body) : undefined,
+      body: body ? (isForm ? body : JSON.stringify(body)) : undefined,
     })
     const data = await res.json().catch(() => ({}))
     /* 凭证失效时强制刷新一次后重试，避免整次调用失败 */
@@ -473,14 +474,21 @@ const QQBotOfficialAdapter = new (class QQBotOfficialAdapter {
     let replyId = ""
 
     const upload = async file => {
-      /* 官方要求可公网访问的 URL；本地文件先经 fileToUrl 暴露 */
-      const ft = await Bot.fileType(file)
-      let url = ft?.url
-      if (!/^https?:\/\//.test(url || "")) url = await Bot.fileToUrl(file)
+      /* 富媒体上传：本地/内网 URL 腾讯侧无法下载（40093007），
+         因此取到文件内容后一律走 form-data 直传，URL 方式仅作兜底 */
+      const buf = await Bot.Buffer(file, { http: true })
+      const form = new FormData()
+      form.append("file_type", "1")
+      form.append("srv_send_msg", "false")
+      if (Buffer.isBuffer(buf)) {
+        form.append("file", new Blob([buf]), "image.png")
+      } else {
+        form.append("url", buf)
+      }
       const res = await this.request(
         appid, secret, "POST",
         isGroup ? `/v2/groups/${id}/files` : `/v2/users/${id}/files`,
-        { file_type: 1, srv_send_msg: false, url },
+        form,
       )
       return res.file_info
     }
