@@ -475,12 +475,14 @@ const QQBotOfficialAdapter = new (class QQBotOfficialAdapter {
 
     const upload = async file => {
       /* 富媒体上传：本地/内网 URL 腾讯侧无法下载（40093007/40093010），
-         files 接口本地内容上传用 file_b64（base64）；仅当拿不到内容时才把 URL 交给腾讯侧下载 */
+         按官方文档二进制直传字段为 file_data（base64）+ file_name，5MB 内可用；
+         仅当拿不到内容时才把 URL 交给腾讯侧下载 */
       const buf = await Bot.Buffer(file)
       Bot.makeLog("debug", [`官机富媒体上传`, Buffer.isBuffer(buf) ? `Buffer ${buf.length} 字节` : String(buf)], appid)
       const body = { file_type: 1, srv_send_msg: false }
       if (Buffer.isBuffer(buf)) {
-        body.file_b64 = buf.toString("base64")
+        body.file_data = buf.toString("base64")
+        body.file_name = `image.${(await Bot.fileType(file))?.type?.ext || "png"}`
       } else {
         body.url = String(buf)
       }
