@@ -65,6 +65,9 @@ const result = {
   targetSize: fs.existsSync(target) && fs.statSync(target).isFile() ? fs.statSync(target).size : null,
   destExists: dest ? fs.existsSync(dest) : false,
   findings,
+  gitCalls: fs.existsSync(process.env.FSGUARD_GIT_CALLS_FILE)
+    ? fs.readFileSync(process.env.FSGUARD_GIT_CALLS_FILE, 'utf8').trim().split(/\\r?\\n/).filter(Boolean).length
+    : 0,
   backups: fs.existsSync(backupRoot) ? walk(backupRoot) : [],
 }
 fs.writeFileSync(process.env.RESULT_FILE, JSON.stringify(result))
@@ -130,6 +133,23 @@ export const done = (async () => {
 })()
 `
 
+const gitDelayPreloadSource = `
+const childProcess = require('node:child_process')
+const fs = require('node:fs')
+const { syncBuiltinESMExports } = require('node:module')
+const original = childProcess.execFileSync
+childProcess.execFileSync = function (file, args, ...rest) {
+  if (file === 'git' && Array.isArray(args) && args.includes('rev-parse')) {
+    fs.appendFileSync(process.env.FSGUARD_GIT_CALLS_FILE, JSON.stringify(args) + '\\n')
+    const delay = Number(process.env.FSGUARD_GIT_DELAY_MS)
+    const script = "setTimeout(() => { const r = require('node:child_process').execFileSync('git', " + JSON.stringify(args) + ", { stdio: ['ignore', 'pipe', 'ignore'] }); process.stdout.write(r) }, " + delay + ")"
+    return original.call(this, process.execPath, ['-e', script], ...rest)
+  }
+  return original.call(this, file, args, ...rest)
+}
+syncBuiltinESMExports()
+`
+
 function writeFile (file, content) {
   fs.mkdirSync(path.dirname(file), { recursive: true })
   fs.writeFileSync(file, content)
@@ -144,6 +164,7 @@ before(() => {
   writeFile(path.join(templateRoot, 'config/default_config/other.yaml'), 'dataGuard: true\nmasterQQ: []\n')
   writeFile(path.join(templateRoot, 'runner.mjs'), runnerSource)
   writeFile(path.join(templateRoot, 'probe.js'), probeSource)
+  writeFile(path.join(templateRoot, 'git-delay-preload.cjs'), gitDelayPreloadSource)
   fs.mkdirSync(path.join(templateRoot, 'lib/config'), { recursive: true })
   fs.copyFileSync(guardPath, path.join(templateRoot, 'lib/config/fsGuard.js'))
   // Node 内部异步帧按这些 fixture 路径和 HEAD 校验。
@@ -163,7 +184,7 @@ after(() => {
   if (suiteRoot) fs.rmSync(suiteRoot, { recursive: true, force: true })
 })
 
-function runCase ({ name, caller = 'qunliao-plugin', rel, method = 'unlinkSync', destRel = '', destContent = '', directory = false, emptyDirectory = false, content = 'payload' }) {
+function runCase ({ name, caller = 'qunliao-plugin', rel, method = 'unlinkSync', destRel = '', destContent = '', directory = false, emptyDirectory = false, content = 'payload', gitDelayMs = 0 }) {
   const safeName = name.replace(/[^a-z0-9_-]+/gi, '-')
   const caseRoot = path.join(suiteRoot, `${String(++caseSeq).padStart(2, '0')}-${safeName}`)
   fs.cpSync(templateRoot, caseRoot, { recursive: true })
@@ -184,11 +205,18 @@ function runCase ({ name, caller = 'qunliao-plugin', rel, method = 'unlinkSync',
     if (destContent) writeFile(dest, destContent)
   }
   const resultFile = path.join(caseRoot, 'result.json')
-  const child = spawnSync(process.execPath, [path.join(caseRoot, 'runner.mjs')], {
+  const gitCallsFile = path.join(caseRoot, 'git-calls.log')
+  const nodeArgs = gitDelayMs
+    ? ['--require', path.join(caseRoot, 'git-delay-preload.cjs'), path.join(caseRoot, 'runner.mjs')]
+    : [path.join(caseRoot, 'runner.mjs')]
+  const startedAt = Date.now()
+  const child = spawnSync(process.execPath, nodeArgs, {
     cwd: caseRoot,
     env: {
       ...process.env,
       FSGUARD_URL: pathToFileURL(guardPath).href,
+      FSGUARD_GIT_DELAY_MS: String(gitDelayMs),
+      FSGUARD_GIT_CALLS_FILE: gitCallsFile,
       PROBE_FILE: probeFile,
       PROBE_TARGET: target,
       PROBE_DEST: dest,
@@ -196,11 +224,11 @@ function runCase ({ name, caller = 'qunliao-plugin', rel, method = 'unlinkSync',
       RESULT_FILE: resultFile,
     },
     encoding: 'utf8',
-    timeout: 20000,
+    timeout: gitDelayMs ? 30000 : 20000,
     windowsHide: true,
   })
   assert.equal(child.status, 0, `${name}: child failed\n${child.stdout}\n${child.stderr}`)
-  return { ...JSON.parse(fs.readFileSync(resultFile, 'utf8')), rel, destRel }
+  return { ...JSON.parse(fs.readFileSync(resultFile, 'utf8')), rel, destRel, elapsedMs: Date.now() - startedAt }
 }
 
 function assertAllow (result, options = {}) {
@@ -244,7 +272,6 @@ const positiveCases = [
   ['meme-plugin', 'data/meme-plugin/original/original.gif'],
   ['meme-plugin', 'data/meme-plugin/result/result.png'],
   ['qunliao-plugin', 'data/cache/dailyNews/2026-11-26.jpg'],
-  ['bh3-plugin', 'data/bh3/card-123-1.png'],
   ['liulian-plugin', 'data/randomQA/123456789.txt'],
 ]
 
@@ -282,11 +309,24 @@ const backupCases = [
   ['meme-plugin', 'data/meme-plugin/result-evil/result.png'],
   ['qunliao-plugin', 'data/cache/dailyNews-evil/news.jpg'],
   ['qunliao-plugin', 'data/cache/other/news.jpg'],
+  ['bh3-plugin', 'data/bh3/card-123-1.png'],
   ['bh3-plugin', 'data/bh3/card.png'],
+  ['bh3-plugin', 'data/bh3/card-config.json'],
+  ['bh3-plugin', 'data/bh3/card-123-1.jpg'],
+  ['bh3-plugin', 'data/bh3/card-cache/keep.png'],
   ['bh3-plugin', 'data/bh3/cookies.json'],
   ['aqing-plugin', 'data/aq/music/music_123.mp3'],
   ['crystelf-plugin', 'data/rss-123.png'],
   ['agents-plugin', 'data/tts/tmp/seg_123.wav'],
+  ['eso', 'data/eso/custome_resources/news/context/123.json'],
+  ['eso', 'data/eso/custome_resources/ttc/cache/PriceTableNA.zip'],
+  ['eso', 'data/eso/custome_resources/ttc/cache/keep.json'],
+  ['eso', 'data/eso/custome_resources/steam/cache/game.json'],
+  ['eso', 'data/eso/custome_resources/data/builds/123.json'],
+  ['example', 'data/fuck/123456789/987654321.json'],
+  ['example', 'data/fuck/config.yaml'],
+  ['example', 'data/true-ranking/jobs/0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef.json.550e8400-e29b-41d4-a716-446655440000.tmp'],
+  ['example', 'data/true-ranking/jobs/0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef.json'],
   ['example/qunliao-plugin', 'data/cache/dailyNews/news.jpg'],
 ]
 
@@ -340,6 +380,20 @@ for (const [method, emptyDirectory] of [
     }))
   })
 }
+
+test('liulian rm remains allowed when core hash verification is slow', () => {
+  const result = runCase({
+    name: 'liulian-randomQA-slow-git',
+    caller: 'liulian-plugin',
+    rel: 'data/randomQA',
+    method: 'rm',
+    directory: true,
+    gitDelayMs: 6000,
+  })
+  assert.ok(result.gitCalls > 0, 'slow Git fixture did not exercise core hash verification')
+  assert.ok(result.elapsedMs >= 5500, `slow Git fixture waited only ${result.elapsedMs}ms`)
+  assertAllow(result)
+})
 
 for (const method of ['renameSync', 'rename', 'promises.rename']) {
   test(`liulian can rename the exact randomQA counter directory via ${method}`, () => {
@@ -546,6 +600,40 @@ for (const rel of ['data/security/test.json', 'data/panel/test.json', '.git/fsgu
       caller: 'qunliao-plugin',
       rel,
     }))
+  })
+}
+
+test('generic plugin temporary directory remains silently disposable', () => {
+  assertAllow(runCase({
+    name: 'generic-plugin-temp-pass',
+    caller: 'example-plugin',
+    rel: 'data/example-plugin/.temp/render.png',
+  }), { expectAllowLog: false })
+})
+
+for (const rel of [
+  'data/db/.temp/core.db',
+  'data/security/.temp/findings.jsonl',
+  'data/panel/.temp/config.json',
+]) {
+  test(`core temporary path ${rel} remains blocked`, () => {
+    assertBlock(runCase({
+      name: `core-temp-${rel}`,
+      caller: 'qunliao-plugin',
+      rel,
+    }))
+  })
+}
+
+for (const method of ['rmSync', 'rm', 'promises.rm']) {
+  test(`core temporary directory remains blocked via ${method}`, () => {
+    assertBlock(runCase({
+      name: `core-temp-directory-${method}`,
+      caller: 'qunliao-plugin',
+      rel: 'data/security/.temp',
+      method,
+      directory: true,
+    }), { error: method !== 'rmSync' })
   })
 }
 
