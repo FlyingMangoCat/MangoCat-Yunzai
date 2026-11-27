@@ -67,6 +67,7 @@ const QQBotOfficialAdapter = new (class QQBotOfficialAdapter {
       reconnecting: false,
       last_msg_id: new Map(),
       msg_seq: 0,
+      seen: new Map(),
     })
   }
 
@@ -234,6 +235,16 @@ const QQBotOfficialAdapter = new (class QQBotOfficialAdapter {
       Bot.makeLog("warn", `收到事件 ${type} 但账号 ${appid} 未就绪`, appid)
       return
     }
+    /* 官方会为确保可达重复推送相同 msg_id 的消息事件，需去重 */
+    if (d?.id && type?.endsWith("MESSAGE_CREATE")) {
+      const st = this.stateOf(appid)
+      if (st.seen.has(d.id)) return
+      st.seen.set(d.id, 1)
+      if (st.seen.size > 500) {
+        const keys = st.seen.keys()
+        while (st.seen.size > 400) st.seen.delete(keys.next().value)
+      }
+    }
     switch (type) {
       case "READY":
         this.onReady(appid, d)
@@ -295,12 +306,32 @@ const QQBotOfficialAdapter = new (class QQBotOfficialAdapter {
     Bot.em(`connect.${appid}`, { self_id: appid, bot })
   }
 
+  /** 官方时间戳（RFC3339）转秒级 Unix；解析失败回退当前时间 */
+  parseTime(ts) {
+    const t = ts ? new Date(ts).getTime() : NaN
+    return Number.isNaN(t) ? Math.floor(Date.now() / 1000) : Math.floor(t / 1000)
+  }
+
+  /** 附件（图片）转 Yunzai 图片段 */
+  attachmentSegs(d) {
+    const segs = []
+    for (const att of d?.attachments || []) {
+      if (att.content_type?.startsWith("image") && att.url)
+        segs.push({ type: "image", file: att.url, name: att.filename })
+    }
+    return segs
+  }
+
   /**
    * 组装单聊（C2C / 频道私信）消息事件
    */
   privateEvent(bot, d, userId) {
     const st = this.stateOf(bot.uin)
     if (d.id) st.last_msg_id.set(userId, d.id)
+    const content = String(d.content ?? "").trim()
+    const message = []
+    if (content) message.push({ type: "text", text: content })
+    message.push(...this.attachmentSegs(d))
     return {
       bot,
       self_id: bot.uin,
@@ -310,13 +341,13 @@ const QQBotOfficialAdapter = new (class QQBotOfficialAdapter {
       message_id: d.id,
       user_id: userId,
       seq: d.seq,
-      time: Math.floor(Date.now() / 1000),
+      time: this.parseTime(d.timestamp),
       sender: {
         user_id: userId,
         nickname: d.author?.username || "QQ用户",
       },
-      message: [{ type: "text", text: d.content }],
-      raw_message: d.content,
+      message,
+      raw_message: content,
       self_message_id: d.id,
     }
   }
@@ -341,6 +372,11 @@ const QQBotOfficialAdapter = new (class QQBotOfficialAdapter {
     const userId = d.author?.member_openid || d.author?.user_openid || d.author?.id
     const st = this.stateOf(bot.uin)
     if (d.id) st.last_msg_id.set(groupId, d.id)
+    const nickname = d.author?.member_nickname || d.author?.username || "QQ用户"
+    const content = String(d.content ?? "").trim()
+    const message = []
+    if (content) message.push({ type: "text", text: content })
+    message.push(...this.attachmentSegs(d))
     const data = {
       bot,
       self_id: bot.uin,
@@ -350,14 +386,14 @@ const QQBotOfficialAdapter = new (class QQBotOfficialAdapter {
       message_id: d.id,
       group_id: groupId,
       user_id: userId,
-      time: Math.floor(Date.now() / 1000),
+      time: this.parseTime(d.timestamp),
       sender: {
         user_id: userId,
-        card: d.author?.username || "QQ用户",
-        nickname: d.author?.username || "QQ用户",
+        card: nickname,
+        nickname,
       },
-      message: [{ type: "text", text: d.content }],
-      raw_message: d.content,
+      message,
+      raw_message: content,
       self_message_id: d.id,
     }
     Bot.makeLog("info", `群消息：${data.raw_message}`, `${bot.uin} <= ${groupId}, ${userId}`, true)
@@ -376,7 +412,7 @@ const QQBotOfficialAdapter = new (class QQBotOfficialAdapter {
     if (d.content) message.push({ type: "text", text: d.content })
     for (const att of d.attachments || []) {
       if (att.content_type?.startsWith("image"))
-        message.push({ type: "image", url: att.url, name: att.filename })
+        message.push({ type: "image", file: att.url, name: att.filename })
     }
     const raw_message = d.content + (d.attachments || []).map(i => `\n[图片：${i.filename}]`).join("")
 
@@ -560,13 +596,24 @@ const QQBotOfficialAdapter = new (class QQBotOfficialAdapter {
     return this.request(appid, secret, "POST", `/channels/${channelId}/messages`, { content })
   }
 
+  /**
+   * 撤回单聊/群聊消息（官方 DELETE 端点）
+   */
+  recall(appid, secret, kind, id, message_id) {
+    const api =
+      kind === "group"
+        ? `/v2/groups/${id}/messages/${message_id}`
+        : `/v2/users/${id}/messages/${message_id}`
+    return this.request(appid, secret, "DELETE", api)
+  }
+
   pickFriend(appid, secret, userId) {
     const adapter = this
     return {
       adapter,
       user_id: userId,
       sendMsg: msg => adapter.sendMsg(appid, secret, "user", userId, msg),
-      recallMsg: () => adapter.logRecall(appid),
+      recallMsg: message_id => adapter.recall(appid, secret, "user", userId, message_id),
       sendFile: file => adapter.sendMsg(appid, secret, "user", userId, [{ type: "image", file }]),
       getInfo: () => Bot[appid].fl.get(userId) || { user_id: userId, nickname: "QQ用户" },
       getSimpleInfo() {
@@ -585,7 +632,7 @@ const QQBotOfficialAdapter = new (class QQBotOfficialAdapter {
       adapter,
       group_id: groupId,
       sendMsg: msg => adapter.sendMsg(appid, secret, "group", groupId, msg),
-      recallMsg: () => adapter.logRecall(appid),
+      recallMsg: message_id => adapter.recall(appid, secret, "group", groupId, message_id),
       sendFile: file => adapter.sendMsg(appid, secret, "group", groupId, [{ type: "image", file }]),
       getInfo: () => Bot[appid].gl.get(groupId) || { group_id: groupId, group_name: "QQ群" },
       pickMember: () => ({
