@@ -20,7 +20,7 @@ export default class RoleIndex extends base {
     this.area = {
       蒙德: 1,
       璃月: 2,
-      雪山: 3,
+      龙脊雪山: 3,
       稻妻: 4,
       渊下宫: 5,
       层岩巨渊: 6,
@@ -206,8 +206,8 @@ export default class RoleIndex extends base {
     let explor = []
     let explor2 = []
 
-    let expArr = ["纳塔", "枫丹", "须弥", "层岩巨渊", "渊下宫"]
-    let expArr2 = ["稻妻", "雪山", "璃月", "蒙德"]
+    let expArr = ["空之神殿", "风息山", "挪德卡莱", "纳塔", "枫丹"]
+    let expArr2 = ["须弥", "层岩巨渊", "龙脊雪山", "璃月", "蒙德"]
 
     for (let val of expArr) {
       let tmp = {
@@ -571,8 +571,42 @@ export default class RoleIndex extends base {
     resIndex.world_explorations = lodash.orderBy(resIndex.world_explorations, ["id"], ["desc"])
 
     let explor = []
+
+    /* 移植上游 de09713：用 world_exploration_display 分组展示子区域，
+       供奉类特殊行（声望/梦之树/摹忆中枢/影域解析）走 exLine 静态映射 */
+    const displayExplor = {}
+    for (const display of resIndex.world_exploration_display || []) {
+      displayExplor[display.exploration_id] = display.group?.items || []
+    }
+    const explorById = lodash.keyBy(resIndex.world_explorations, "id")
+
+    const exLine = {
+      8: [
+        area => ({
+          name: "声望",
+          text: `${area.level}级`,
+        }),
+        area => ({
+          name: "梦之树",
+          text: `${area.offerings?.[0]?.level ?? 0}级`,
+        }),
+      ],
+      19: [
+        () => ({
+          name: "摹忆中枢",
+          text: `${[15, 19].map(id => explorById[id]?.offerings?.[0]?.level ?? 0).join("/")}级`,
+        }),
+      ],
+      20: [
+        () => ({
+          name: "影域解析",
+          text: `${[16, 20].map(id => explorById[id]?.offerings?.[0]?.level ?? 0).join("/")}级`,
+        }),
+      ],
+    }
+
     for (let val of resIndex.world_explorations) {
-      if ([7, 11, 12, 13].includes(val.id)) continue
+      if ([3, 5, 6, 7, 10, 11, 12, 13, 14, 16, 18].includes(val.id)) continue
 
       val.name = this.areaName[val.id]
         ? this.areaName[val.id]
@@ -588,49 +622,19 @@ export default class RoleIndex extends base {
         ],
       }
 
-      if (val.id == 10) tmp.line = []
-
-      if (["蒙德", "璃月", "稻妻", "须弥", "枫丹"].includes(val.name)) {
-        tmp.line.push({ name: "声望", text: `${val.level}级` })
-      }
-
-      if ([6, 10].includes(val.id)) {
-        let oidArr = [7]
-        if (val.id == 10) oidArr = [13, 12, 11]
-        for (let oid of oidArr) {
-          let underground = lodash.find(resIndex.world_explorations, function (o) {
-            return o.id == oid
+      const group = displayExplor[val.id] || []
+      for (const item of group) {
+        const aid = item.area_ids?.find(id => [10, 6].includes(id)) ?? item.area_ids?.[0]
+        if (aid && this.areaName[aid]) {
+          tmp.line.push({
+            name: this.areaName[aid],
+            text: `${item.exploration_percentage / 10}%`,
           })
-          if (underground) {
-            tmp.line.push({
-              name: this.areaName[underground.id],
-              text: `${underground.exploration_percentage / 10}%`,
-            })
-          }
         }
       }
 
-      if (["雪山", "稻妻", "层岩巨渊", "须弥", "枫丹", "沉玉谷", "纳塔", "空之神殿"].includes(val.name)) {
-        if (val.offerings[0].name.includes("流明石")) {
-          val.offerings[0].name = "流明石"
-        }
-        if (val.offerings[0].name == "桓那兰那的梦之树") {
-          val.offerings[0].name = "梦之树"
-        }
-        if (val.offerings[0].name.includes("露景泉")) {
-          val.offerings[0].name = "露景泉"
-        }
-        if (val.offerings[0].name.includes("煅石之火")) {
-          val.offerings[0].name = "煅石之火"
-        }
-        if (val.offerings[0].name.includes("摹忆中枢")) {
-          val.offerings[0].name = "摹忆中枢"
-        }
-
-        tmp.line.push({
-          name: val.offerings[0].name,
-          text: `${val.offerings[0].level}级`,
-        })
+      for (const ext of exLine[val.id] || []) {
+        tmp.line.push(ext(val))
       }
 
       explor.push(tmp)
