@@ -1065,6 +1065,11 @@ class OneBotv11Adapter {
    * 连接建立：创建 Bot 账号对象并拉取基础资料
    */
   async registerBot(data, ws) {
+    if (Bot[data.self_id])
+      logger.warn(
+        `[OneBotv11] 账号 ${data.self_id} 存在重复连接：协议端可能配置了多条反向 ws 或旧连接未断开，` +
+          `同一消息将被处理多次`,
+      )
     Bot[data.self_id] = {
       adapter: this,
       ws,
