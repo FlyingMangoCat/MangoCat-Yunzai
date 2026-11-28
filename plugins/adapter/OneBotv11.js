@@ -15,11 +15,13 @@ class OneBotv11Adapter {
   path = this.name
   /** echo → 待响应的 api 请求 */
   pending = new Map()
+  /** 各账号已处理的 message_id，防重复推送导致重复回复 */
+  seenMsg = new Map()
   timeout = 60000
 
-  /** 日志内容格式化 */
+  /** 日志内容格式化：base64 图片数据打省略标记，避免污染日志 */
   textOf(msg) {
-    return Bot.String(msg)
+    return Bot.String(msg).replace(/base64:\/\/[A-Za-z0-9+/=]{100,}/g, "base64://<图片数据已省略>")
   }
 
   /**
@@ -1195,6 +1197,18 @@ class OneBotv11Adapter {
 
   /** 消息事件：段归一化后按消息来源记录日志并组装兼容字段 */
   dispatchMessage(data) {
+    /* 同一消息可能被协议端重复推送，按 message_id 去重防止重复回复 */
+    if (data.message_id) {
+      const seen = this.seenMsg.get(data.self_id) ?? new Set()
+      if (seen.has(data.message_id)) return
+      seen.add(data.message_id)
+      if (seen.size > 500) {
+        const keys = seen.keys()
+        while (seen.size > 400) seen.delete(keys.next().value)
+      }
+      this.seenMsg.set(data.self_id, seen)
+    }
+
     /* OneBot 段 { type, data } 转本体段，供 loader 与插件直接消费 */
     data.message = this.normalizeSegments(data.message)
 
