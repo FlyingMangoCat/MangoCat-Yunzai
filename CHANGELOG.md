@@ -1,3 +1,17 @@
+ # 3.3.0
+
+ * 新增：QQ 官方机器人适配器ⁿᵉʷ
+   * 通过 WebSocket 接入开放平台 Gateway，AppID + AppSecret 换取 AccessToken 鉴权（无需登录 QQ 号、不受风控），支持多账号
+   * 收发覆盖单聊（C2C）、群聊 @ 消息、频道公域/私域消息；收到内容按官方字段映射（member_nickname、attachments 图片、RFC3339 时间戳、content 修剪），并按 msg_id 去重防止重复回复
+   * 发送支持文本/图片/回复/合并转发降级，图片等富媒体按官方 files 接口以 file_data 直传（不依赖公网可访问地址），支持单聊/群聊消息撤回
+   * 断线 30 秒自动重连并支持会话恢复；未配置账号时静默跳过，不影响本体启动
+   * 主人识别说明：官机用户标识为 openid，需将 openid 加入 other.yaml 的 masterQQ 列表
+ * 新增：首次配置菜单接入选项ⁿᵉʷ
+   * 首次部署/`npm run login` 交互菜单新增「QQ 官方机器人」项，引导填写 AppID/AppSecret 并生成配置，自动停用 icqq
+   * 配置模板 `config/default_config/qqbot.yaml` 含分步指引与多账号写法
+ * 新增：官机发送链路回归自测ⁿᵉʷ
+   * 拦截 openapi 调用断言富媒体直传字段与纯文本消息构造，防止协议回归
+
  # 3.2.9
 
  * 加固：已收录插件自有数据白名单ⁿᵉʷ
