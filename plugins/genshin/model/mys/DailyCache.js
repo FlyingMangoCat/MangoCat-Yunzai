@@ -319,8 +319,10 @@ export default class DailyCache extends BaseModel {
    * @returns {Promise<boolean>}
    */
   async zDel(table, key, delCount = false) {
+    if (!key) return false;
+    key = String(key);
     // 删除key对应list所有记录
-    let check = redis.zScore(this.getTableKey(table, "count"), key);
+    let check = await redis.zScore(this.getTableKey(table, "count"), key);
     await redis.zRemRangeByScore(this.getTableKey(table), key, key);
     await this.zDisableKey(table, key, delCount);
     return !!check;
