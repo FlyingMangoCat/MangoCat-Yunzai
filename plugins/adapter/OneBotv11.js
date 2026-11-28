@@ -37,6 +37,8 @@ class OneBotv11Adapter {
       Bot.makeLog("error", [`openapi ${action} 响应超时`, params], data.self_id)
     }, timeout)
 
+    ws.sendMsg(request)
+
     return pending.promise
       .then(result => {
         if (result?.status === "failed" || result?.message) {
@@ -1174,8 +1176,11 @@ class OneBotv11Adapter {
     Bot.em(`connect.${data.self_id}`, data)
   }
 
-  /** 消息事件：按消息来源记录日志并组装兼容字段 */
+  /** 消息事件：段归一化后按消息来源记录日志并组装兼容字段 */
   dispatchMessage(data) {
+    /* OneBot 段 { type, data } 转本体段，供 loader 与插件直接消费 */
+    data.message = this.normalizeSegments(data.message)
+
     switch (data.message_type) {
       case "private": {
         const name =
