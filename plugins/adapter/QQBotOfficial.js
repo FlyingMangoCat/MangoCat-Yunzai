@@ -427,7 +427,7 @@ const QQBotOfficialAdapter = new (class QQBotOfficialAdapter {
       channel_id: d.channel_id,
       group_id: groupId,
       user_id: d.author?.id,
-      time: Math.floor(Date.now() / 1000),
+      time: this.parseTime(d.timestamp),
       sender: {
         user_id: d.author?.id,
         card: d.author?.username,
@@ -547,10 +547,12 @@ const QQBotOfficialAdapter = new (class QQBotOfficialAdapter {
         case "reply":
           replyId = i.id
           break
-        case "at":
+        case "at": {
           /* 单聊/群聊不支持 at 段，降级为文本；频道走 guild 发送分支 */
-          content += `@${i.text || i.id}`
+          const at = i.text || i.id
+          if (at) content += `@${at}`
           break
+        }
         case "node":
           for (const j of i.data) {
             const t = typeof j.message === "object" && !Array.isArray(j.message) ? j.message : j.message
