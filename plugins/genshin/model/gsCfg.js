@@ -3,6 +3,12 @@ import chokidar from "chokidar";
 import fs from "node:fs";
 import { promisify } from "node:util";
 import lodash from "lodash";
+// 原神角色别名单数据源（榴莲维护），仅引入原神表，星铁/绝区零/鸣潮表在榴莲内另名导出勿混用
+import {
+  roleId as liulianRoleId,
+  wwroleId as liulianWWRoleId,
+  nteroleId as liulianNTRoleId,
+} from "../../liulian-plugin/config/roleId.js";
 import MysInfo from "./mys/mysInfo.js";
 
 /** 配置文件 */
@@ -154,10 +160,38 @@ class GsCfg {
   }
 
   /**
+   * 原神角色别名表：主数据源为榴莲 roleId.js，defSet 仅保留主角等榴莲未收录的条目
+   * @returns roleId -> 别名数组，首位为官方名称
+   */
+  getRoleNameArr() {
+    let nameArr = this.getdefSet("role", "name");
+    let merged = { ...nameArr };
+    for (let id in liulianRoleId) {
+      if (merged[id]) {
+        merged[id] = [...new Set([...merged[id], ...liulianRoleId[id]])];
+      } else {
+        merged[id] = liulianRoleId[id];
+      }
+    }
+    return merged;
+  }
+
+  /**
+   * 各游戏角色别名表统一入口，数据源为榴莲 roleId.js
+   * @param game "ww" 鸣潮 | "nt" 异环；原神/星铁/绝区零分别走 getRoleNameArr、Player.js 内的 starroleId/zzzroleId
+   * @returns roleId -> 别名数组，首位为官方名称
+   */
+  getGameRoleArr(game) {
+    if (game === "ww") return liulianWWRoleId;
+    if (game === "nt") return liulianNTRoleId;
+    return {};
+  }
+
+  /**
    * 原神角色id转换角色名字
    */
   roleIdToName(id) {
-    let name = this.getdefSet("role", "name");
+    let name = this.getRoleNameArr();
     if (name[id]) {
       return name[id][0];
     }
@@ -191,7 +225,7 @@ class GsCfg {
 
     this.nameID = new Map();
 
-    let nameArr = this.getdefSet("role", "name");
+    let nameArr = this.getRoleNameArr();
     let nameArrUser = this.getConfig("role", "name");
 
     let nameID = {};
@@ -212,7 +246,7 @@ class GsCfg {
 
   /** 返回所有别名，包括用户自定义的 */
   getAllAbbr() {
-    let nameArr = this.getdefSet("role", "name");
+    let nameArr = this.getRoleNameArr();
     let nameArrUser = this.getConfig("role", "name");
 
     for (let i in nameArrUser) {

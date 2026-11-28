@@ -153,7 +153,7 @@ export class abbrSet extends plugin {
 
     if (!role) return false;
 
-    let name = gsCfg.getdefSet("role", "name")[role.roleId];
+    let name = gsCfg.getRoleNameArr()[role.roleId];
     let nameUser = gsCfg.getConfig("role", "name")[role.name] ?? [];
 
     let list = lodash.uniq([...name, ...nameUser]);
