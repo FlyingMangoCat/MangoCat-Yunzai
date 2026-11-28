@@ -46,10 +46,10 @@ class OneBotv11Adapter {
         if (result?.status === "failed" || result?.message) {
           throw Bot.makeError(`openapi ${action} 失败`, result)
         }
-        /* 保持原返回约定：完整响应可读，同时透传 data 内字段 */
+        /* 响应字段优先，data 内字段透传（如 message_id、列表内容） */
         return result.data
           ? new Proxy(result, {
-              get: (target, prop) => target[prop] ?? target.data?.[prop],
+              get: (target, prop) => (prop in target ? target[prop] : target.data?.[prop]),
             })
           : result
       })
@@ -391,7 +391,8 @@ class OneBotv11Adapter {
   /* ==== 好友 / 群 / 成员 列表与信息 ==== */
 
   async fetchFriendList(data) {
-    return (await data.bot.callApi("get_friend_list")).data || []
+    const list = (await data.bot.callApi("get_friend_list")).data
+    return Array.isArray(list) ? list : []
   }
 
   async friendIds(data) {
@@ -420,6 +421,7 @@ class OneBotv11Adapter {
 
   async fetchGroupList(data) {
     const list = (await data.bot.callApi("get_group_list")).data
+    const array = Array.isArray(list) ? list : []
     try {
       /* 频道归属的群合并进列表：频道数据形如 guild-channel 组合键 */
       for (const guild of await this.guilds(data))
@@ -436,7 +438,7 @@ class OneBotv11Adapter {
     } catch (err) {
       /* 频道接口不可用时忽略，仅返回普通群列表 */
     }
-    return list
+    return array
   }
 
   async groupIds(data) {
@@ -464,13 +466,14 @@ class OneBotv11Adapter {
   }
 
   async memberList(data) {
-    return (
+    const list = (
       (
         await data.bot.callApi("get_group_member_list", {
           group_id: data.group_id,
         })
-      ).data || []
+      ).data
     )
+    return Array.isArray(list) ? list : []
   }
 
   async memberIds(data) {
@@ -514,7 +517,8 @@ class OneBotv11Adapter {
   /* ==== 频道 ==== */
 
   async guilds(data) {
-    return (await data.bot.callApi("get_guild_list")).data || []
+    const list = (await data.bot.callApi("get_guild_list")).data
+    return Array.isArray(list) ? list : []
   }
 
   guildInfo(data) {
@@ -524,13 +528,14 @@ class OneBotv11Adapter {
   }
 
   async guildChannels(data) {
-    return (
+    const list = (
       (
         await data.bot.callApi("get_guild_channel_list", {
           guild_id: data.guild_id,
         })
-      ).data || []
+      ).data
     )
+    return Array.isArray(list) ? list : []
   }
 
   async guildChannelMap(data) {
@@ -873,10 +878,10 @@ class OneBotv11Adapter {
 
   async todoList(data) {
     Bot.makeLog("info", "获取群待办列表", `${data.self_id} => ${data.group_id}`, true)
-    const list =
-      (await data.bot.callApi("get_group_todo_list", { group_id: data.group_id })).data || []
-    for (const i of list) if (i?.message) i.message = this.normalizeSegments(i.message)
-    return list
+    const list = (await data.bot.callApi("get_group_todo_list", { group_id: data.group_id })).data
+    const out = Array.isArray(list) ? list : []
+    for (const i of out) if (i?.message) i.message = this.normalizeSegments(i.message)
+    return out
   }
 
   setTodo(data, message_id) {
@@ -1065,11 +1070,13 @@ class OneBotv11Adapter {
    * 连接建立：创建 Bot 账号对象并拉取基础资料
    */
   async registerBot(data, ws) {
-    if (Bot[data.self_id])
-      logger.warn(
-        `[OneBotv11] 账号 ${data.self_id} 存在重复连接：协议端可能配置了多条反向 ws 或旧连接未断开，` +
-          `同一消息将被处理多次`,
-      )
+    const previous = Bot[data.self_id]
+    if (previous) {
+      /* 同账号重复连接（协议端重复配置或旧连接未断开）会导致消息重复处理，
+         强制只保留最新连接，旧连接立即关闭 */
+      logger.warn(`[OneBotv11] 账号 ${data.self_id} 存在重复连接，已关闭旧连接，仅保留最新一条`)
+      previous.ws?.close?.()
+    }
     Bot[data.self_id] = {
       adapter: this,
       ws,
