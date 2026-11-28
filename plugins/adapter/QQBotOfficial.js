@@ -540,7 +540,7 @@ const QQBotOfficialAdapter = new (class QQBotOfficialAdapter {
           content += i.text
           break
         case "image":
-          media.push(await upload(i))
+          media.push(await upload(i.file ?? i.url ?? i))
           break
         case "reply":
           replyId = i.id
