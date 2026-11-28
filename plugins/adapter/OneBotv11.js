@@ -44,7 +44,12 @@ class OneBotv11Adapter {
         if (result?.status === "failed" || result?.message) {
           throw Bot.makeError(`openapi ${action} 失败`, result)
         }
-        return result.data ?? result
+        /* 保持原返回约定：完整响应可读，同时透传 data 内字段 */
+        return result.data
+          ? new Proxy(result, {
+              get: (target, prop) => target[prop] ?? target.data?.[prop],
+            })
+          : result
       })
       .finally(() => {
         clearTimeout(timer)
@@ -1538,5 +1543,6 @@ class OneBotv11Adapter {
   }
 }
 
-Bot.adapter.push(new OneBotv11Adapter())
-export { OneBotv11Adapter }
+const OneBotv11AdapterInstance = new OneBotv11Adapter()
+Bot.adapter.push(OneBotv11AdapterInstance)
+export { OneBotv11AdapterInstance as OneBotv11Adapter }
