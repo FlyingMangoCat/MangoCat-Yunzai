@@ -160,20 +160,11 @@ class GsCfg {
   }
 
   /**
-   * 原神角色别名表：主数据源为榴莲 roleId.js，defSet 仅保留主角等榴莲未收录的条目
+   * 原神角色别名表，单数据源为榴莲 roleId.js（含主角 20000000）
    * @returns roleId -> 别名数组，首位为官方名称
    */
   getRoleNameArr() {
-    let nameArr = this.getdefSet("role", "name");
-    let merged = { ...nameArr };
-    for (let id in liulianRoleId) {
-      if (merged[id]) {
-        merged[id] = [...new Set([...merged[id], ...liulianRoleId[id]])];
-      } else {
-        merged[id] = liulianRoleId[id];
-      }
-    }
-    return merged;
+    return liulianRoleId;
   }
 
   /**
