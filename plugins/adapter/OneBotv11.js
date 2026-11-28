@@ -532,6 +532,12 @@ class OneBotv11Adapter {
     return map
   }
 
+  async guildChannelIds(data) {
+    const ids = []
+    for (const { channel_id } of await this.guildChannels(data)) ids.push(channel_id)
+    return ids
+  }
+
   async guildMembers(data) {
     const members = []
     let next_token = ""
@@ -560,6 +566,12 @@ class OneBotv11Adapter {
     for (const i of await this.guildMembers(data)) map.set(i.user_id, i)
     data.bot.gml.set(data.group_id, map)
     return map
+  }
+
+  async guildMemberIds(data) {
+    const ids = []
+    for (const { user_id } of await this.guildMembers(data)) ids.push(user_id)
+    return ids
   }
 
   guildMemberInfo(data) {
