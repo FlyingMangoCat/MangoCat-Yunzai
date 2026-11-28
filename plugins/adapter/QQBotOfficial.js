@@ -518,7 +518,9 @@ const QQBotOfficialAdapter = new (class QQBotOfficialAdapter {
       const body = { file_type: 1, srv_send_msg: false }
       if (Buffer.isBuffer(buf)) {
         body.file_data = buf.toString("base64")
-        body.file_name = `image.${(await Bot.fileType(file))?.type?.ext || "png"}`
+        /* util.fileType 预期 {file: ...} 结构，Buffer 内容须放在 file 字段传入 */
+        const ft = await Bot.fileType({ file: buf })
+        body.file_name = `image.${ft?.type?.ext || "png"}`
       } else {
         body.url = String(buf)
       }

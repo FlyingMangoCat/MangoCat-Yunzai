@@ -11,7 +11,11 @@ global.Bot = {
   // 模拟 util.Buffer：Buffer 原样返回（与线上对 Buffer 段的行为一致）
   Buffer: data => (Buffer.isBuffer(data) ? data : data),
   Buffer_from: (...args) => Buffer.from(...args),
-  fileType: async file => ({ type: { ext: "png" } }),
+  // 模拟 util.fileType：要求 {file: ...} 形状（data.file 为 Buffer），形状错即抛错
+  fileType: async data => {
+    if (!data || !Buffer.isBuffer(data.file)) throw new TypeError("fileType 需要 {file: Buffer}")
+    return { type: { ext: "png" } }
+  },
   String: data => String(data),
 }
 
