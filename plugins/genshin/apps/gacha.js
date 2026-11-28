@@ -64,7 +64,7 @@ export class gacha extends plugin {
       if (num + weaponNum < this.GachaData.set.count * 10) return false;
     }
 
-    let msg = lodash.truncate(this.e.sender.card, { length: 8 }) + "\n";
+    let msg = lodash.truncate(this.e.sender?.card || this.e.sender?.nickname || "", { length: 8 }) + "\n";
 
     if (user.today.star.length > 0) {
       msg += "今日五星：";

@@ -26,7 +26,7 @@ export default class Buddy extends base {
     return {
       uid: this.e.uid,
       saveId: this.e.uid,
-      name: this.e.sender.card,
+      name: (this.e.sender?.card || this.e.sender?.nickname || ""),
       quality: 80,
       ...screenData,
       ...buddy,

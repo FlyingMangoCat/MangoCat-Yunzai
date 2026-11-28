@@ -41,7 +41,7 @@ export default class Abyss extends base {
 
     /** 截图数据 */
     let data = {
-      name: this.e.sender.card,
+      name: (this.e.sender?.card || this.e.sender?.nickname || ""),
       quality: 80,
       ...this.screenData,
       ...this.abyssData(abyssData),
